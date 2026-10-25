@@ -9,12 +9,16 @@ W.LANGS = {
 };
 W.REG = { n: 'нейтрально', i: 'разговорное', s: 'сленг', r: 'грубо' };
 
-const KEY = 'words-state-v1';
+// хранилище: у гостя ключ BASE, у каждого аккаунта свой — BASE:<id пользователя>
+const BASE = 'words-state-v1';
+let KEY = BASE;
+W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {},
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
-  set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto' }
+  set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us' }
 });
+W.defaults = defaults;
 
 // проверка формы данных: битая копия не должна ломать запуск
 const isObj = x => !!x && typeof x === 'object' && !Array.isArray(x);
@@ -22,35 +26,88 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb'].every(k => s[k] === undefined || isObj(s[k]));
 
-W.load = () => {
-  let s = null, raw = null;
-  try { raw = localStorage.getItem(KEY); s = JSON.parse(raw); } catch (e) {}
+W.normalize = s => {
   const d = defaults();
-  if (!W.validState(s)) {
-    // испорченные данные не затираем молча — откладываем копию
-    if (raw) try { localStorage.setItem(KEY + '-broken', raw); } catch (e) {}
-    return d;
-  }
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.set = Object.assign(d.set, s.set);
   return s;
 };
+W.load = (key = KEY) => {
+  let s = null, raw = null;
+  try { raw = localStorage.getItem(key); s = JSON.parse(raw); } catch (e) {}
+  if (!W.validState(s)) {
+    // испорченные данные не затираем молча — откладываем копию
+    if (raw) try { localStorage.setItem(key + '-broken', raw); } catch (e) {}
+    return defaults();
+  }
+  return W.normalize(s);
+};
 W.S = W.load();
+// переключиться на хранилище аккаунта (uid) или гостя (null)
+W.useStore = uid => { KEY = uid ? BASE + ':' + uid : BASE; W.S = W.load(); };
+W.hasData = s => !!s && (Object.keys(s.prog || {}).length > 0 || (s.decks || []).length > 0);
+W.peekGuest = () => W.load(BASE);
+W.clearGuest = () => { try { localStorage.removeItem(BASE); } catch (e) {} };
+
 let saveWarned = false;
-W.save = () => {
+// quiet — запись без отметки «изменено» (когда кладём данные, пришедшие с сервера)
+W.save = quiet => {
+  if (!quiet) W.S.mod = Date.now();
   try { localStorage.setItem(KEY, JSON.stringify(W.S)); saveWarned = false; }
   catch (e) {
     if (!saveWarned && W.toast) W.toast('Не удалось сохранить! Сделайте копию в «Ещё» → «Сохранность»');
     saveWarned = true;
   }
+  if (!quiet && W.afterSave) W.afterSave();
 };
+// отметки времени для слияния данных с разных устройств
+W.touch = o => { o.u = Date.now(); return o; };
+W.bury = key => { W.S.tomb[key] = Date.now(); };
 // приложение открыто в двух местах (иконка и вкладка): берём свежие данные, чтобы не затереть их
 window.addEventListener('storage', e => {
   if (e.key !== KEY || !e.newValue) return;
   try { const s = JSON.parse(e.newValue); if (W.validState(s)) { W.S = W.load(); if (W.onExternalChange) W.onExternalChange(); } } catch (x) {}
 });
+
+// слияние двух копий данных (этот телефон и сервер): прогресс — по каждому слову, колоды — по каждой колоде
+W.merge = (a, b) => {
+  a = W.normalize(JSON.parse(JSON.stringify(a))); b = W.normalize(JSON.parse(JSON.stringify(b)));
+  const newer = (a.mod || 0) >= (b.mod || 0) ? a : b, older = newer === a ? b : a;
+  const r = JSON.parse(JSON.stringify(newer));
+  const tomb = Object.assign({}, older.tomb);
+  for (const k in newer.tomb) tomb[k] = Math.max(tomb[k] || 0, newer.tomb[k]);
+  const month3 = Date.now() - 90 * 864e5;
+  for (const k in tomb) if (tomb[k] < month3) delete tomb[k];
+  r.tomb = tomb;
+  r.prog = {};
+  for (const id of new Set([...Object.keys(a.prog), ...Object.keys(b.prog)])) {
+    const x = a.prog[id], y = b.prog[id];
+    r.prog[id] = !x ? y : !y ? x : ((x.u || 0) !== (y.u || 0) ? ((x.u || 0) > (y.u || 0) ? x : y) : (x.n >= y.n ? x : y));
+  }
+  r.days = Object.assign({}, a.days);
+  for (const k in b.days) r.days[k] = Math.max(r.days[k] || 0, b.days[k]);
+  r.gram = Object.assign({}, a.gram);
+  for (const k in b.gram) {
+    const x = r.gram[k], y = b.gram[k];
+    r.gram[k] = !x ? y : { done: !!(x.done || y.done), best: Math.max(x.best || 0, y.best || 0) };
+  }
+  r.fav = {};
+  for (const id of new Set([...Object.keys(a.fav), ...Object.keys(b.fav)])) {
+    const t = Math.max(+a.fav[id] || 0, +b.fav[id] || 0);
+    if (!(tomb['fav:' + id] > t)) r.fav[id] = t;
+  }
+  const byId = (xs, ys, kind) => {
+    const m = new Map();
+    for (const o of [...xs, ...ys]) { const p = m.get(o.id); if (!p || (o.u || 0) > (p.u || 0)) m.set(o.id, o); }
+    return [...m.values()].filter(o => !(tomb[kind + ':' + o.id] >= (o.u || 0)));
+  };
+  r.decks = byId(older.decks, newer.decks, 'deck');
+  r.folders = byId(older.folders, newer.folders, 'folder');
+  r.mod = Math.max(a.mod || 0, b.mod || 0);
+  return r;
+};
 
 // ---------- даты ----------
 W.dayNum = (d = new Date()) => Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 864e5);
@@ -135,6 +192,7 @@ W.rate = (c, r) => {
     else p.b = Math.min(6, p.b + (r === 'good' ? 1 : 2));
   }
   p.d = t + gap;
+  p.u = Date.now();
   const k = W.dayKey();
   S.days[k] = (S.days[k] || 0) + 1;
   W.save();
@@ -257,11 +315,20 @@ W.parseImport = text => {
 W.exportText = cards => cards.map(c => [c.w, c.t, c.ex, c.et].join('\t').replace(/\t+$/, '')).join('\n');
 
 W.newDeck = (lang, title, folder) => {
-  const d = { id: W.uid('d'), lang, folder: folder || 'my', title, emoji: '📝', cards: [] };
+  const d = { id: W.uid('d'), lang, folder: folder || 'my', title, emoji: '📝', cards: [], u: Date.now() };
   W.S.decks.push(d); W.save();
   return d;
 };
 W.newCard = (lang, f) => Object.assign({ id: W.uid('c'), lang, w: '', t: '', ex: '', et: '', r: 'n', n: '' }, f);
 
 W.shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// ---------- озвучка из файлов ----------
+// текст → имя файла: одинаково считают приложение и tools/build-audio.js
+W.speechText = t => (t || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();
+W.audioKey = t => {
+  const s = W.speechText(t);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
+  return h.toString(16).padStart(8, '0') + '-' + s.length;
+};
 })();

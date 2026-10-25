@@ -118,14 +118,17 @@ W.renderMore = root => {
   };
   const isIOS = W.isIOS(), standalone = W.standalone();
   let prev = null;
-  try { prev = localStorage.getItem(PREV); } catch (e) {}
+  try { prev = localStorage.getItem(PREV()); } catch (e) {}
   W.put(root, 
     h('header', { class: 'head' }, h('h1', null, 'Ещё')),
+    accountPanel(),
     h('section', { class: 'panel' }, h('h3', null, 'Учёба'),
       h('label', { class: 'set-row' }, h('span', null, 'Новых слов в день'), sel('newPerDay', [[5, '5'], [10, '10'], [15, '15'], [20, '20'], [30, '30']])),
       h('label', { class: 'set-row' }, h('span', null, 'Что показывать сначала'),
         sel('dir', [['fw', 'иностранное слово'], ['bw', 'русский перевод'], ['mix', 'вперемешку']])),
-      toggle('sound', 'Кнопки озвучки', 'Голос телефона; работает без интернета, если голос установлен'),
+      h('label', { class: 'set-row' }, h('span', null, 'Голос (английский)', h('span', { class: 'muted small block' }, 'Нейросетевой; звук докачивается и потом работает без интернета')),
+        sel('voice', [['us', 'американский'], ['gb', 'британский']])),
+      toggle('sound', 'Кнопки озвучки', 'Немецкий пока озвучивает голос телефона'),
       toggle('hideRude', 'Скрыть грубые слова', 'Слова с пометкой «грубо» пропадут из колод и тренировок')),
     h('section', { class: 'panel' }, h('h3', null, 'Вид'),
       h('label', { class: 'set-row' }, h('span', null, 'Тема'), sel('theme', [['auto', 'как в телефоне'], ['light', 'светлая'], ['dark', 'тёмная']], W.applyTheme))),
@@ -157,6 +160,68 @@ W.renderMore = root => {
     h('p', { class: 'muted small center' }, 'Живые слова · версия ' + W.VERSION));
 };
 
+// ---------- аккаунт ----------
+function accountPanel() {
+  const A = W.acc;
+  const panel = h('section', { class: 'panel', id: 'acc-panel' }, h('h3', null, 'Аккаунт'));
+  if (!A || !A.configured()) {
+    panel.append(h('p', { class: 'muted small' }, 'Аккаунты скоро заработают. Пока всё хранится в этом телефоне.'));
+    return panel;
+  }
+  if (A.session) {
+    const st = { ok: 'Сохранено на сервере' + (A.lastSync ? ' · ' + new Date(A.lastSync).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''),
+      syncing: 'Синхронизация…', offline: 'Нет интернета — сохранится, когда появится связь',
+      error: 'Не удалось связаться с сервером: ' + A.error, relogin: 'Нужно войти заново' }[A.status] || '';
+    W.put(panel, h('h3', null, 'Аккаунт'),
+      h('p', null, '👤 ', h('b', null, A.session.user.email)),
+      h('p', { class: 'muted small' }, st),
+      A.status === 'relogin' ? loginForm(A.session.user.email) : null,
+      h('div', { class: 'row-btns' },
+        h('button', { class: 'btn', onclick: () => A.sync() }, 'Синхронизировать'),
+        h('button', { class: 'btn', onclick: () => W.confirm('Выйти из аккаунта? Данные останутся на сервере, а на этом телефоне откроется режим без аккаунта.', 'Выйти', () => { A.signOut(); }) }, 'Выйти')));
+    return panel;
+  }
+  panel.append(h('p', { class: 'muted small' }, 'Войдите, чтобы прогресс сохранялся на сервере и был одинаковым на телефоне и компьютере. Без интернета всё работает, как раньше.'), loginForm(''));
+  return panel;
+}
+
+function loginForm(email) {
+  const A = W.acc;
+  const mail = h('input', { type: 'email', placeholder: 'почта', autocomplete: 'email', value: email, autocapitalize: 'off' });
+  const pass = h('input', { type: 'password', placeholder: 'пароль (от 6 символов)', autocomplete: 'current-password' });
+  const msg = h('p', { class: 'small' });
+  const run = async (fn, okText) => {
+    if (!mail.value.trim()) { msg.textContent = 'Введите почту'; return; }
+    msg.textContent = 'Подождите…';
+    try { const r = await fn(); if (okText) msg.textContent = typeof okText === 'function' ? okText(r) : okText; }
+    catch (e) { msg.textContent = navigator.onLine ? e.message : 'Нет интернета'; }
+  };
+  return h('form', { class: 'login', onsubmit: e => { e.preventDefault(); run(() => A.signIn(mail.value.trim(), pass.value)); } },
+    mail, pass,
+    h('div', { class: 'row-btns' },
+      h('button', { type: 'submit', class: 'btn primary' }, 'Войти'),
+      h('button', { type: 'button', class: 'btn', onclick: () => {
+        if (pass.value.length < 6) { msg.textContent = 'Придумайте пароль от 6 символов'; return; }
+        run(() => A.signUp(mail.value.trim(), pass.value), r => r === 'confirm'
+          ? 'Готово! Мы отправили письмо на ' + mail.value.trim() + '. Откройте его и нажмите ссылку — после этого войдите здесь.' : '');
+      } }, 'Создать аккаунт')),
+    h('button', { type: 'button', class: 'link', onclick: () => run(() => A.recover(mail.value.trim()), 'Письмо для смены пароля отправлено на ' + mail.value.trim()) }, 'Забыли пароль?'),
+    msg);
+}
+
+W.askNewPassword = () => {
+  const pass = h('input', { type: 'password', placeholder: 'новый пароль (от 6 символов)', autocomplete: 'new-password' });
+  W.modal('Новый пароль', W.field('Пароль', pass), [{ label: 'Сохранить', cls: 'primary', fn: () => {
+    if (pass.value.length < 6) { W.toast('Нужно не меньше 6 символов'); return false; }
+    W.acc.setPassword(pass.value).then(() => W.toast('Пароль изменён'), e => W.toast(e.message));
+  } }]);
+};
+// обновляем блок аккаунта, если вкладка «Ещё» открыта
+W.accChanged = () => {
+  const old = document.getElementById('acc-panel');
+  if (old && !document.getElementById('tab-more').hidden && !old.contains(document.activeElement)) old.replaceWith(accountPanel());
+};
+
 function exportBackup() {
   const data = JSON.stringify(W.S);
   const name = 'zhivye-slova-' + W.dayKey() + '.json';
@@ -173,13 +238,13 @@ function exportBackup() {
   W.toast('Проверьте папку «Загрузки»: там должен появиться ' + name);
 }
 
-const KEY = 'words-state-v1', PREV = 'words-state-v1-prev';
+const KEY = () => W.storeKey(), PREV = () => W.storeKey() + '-prev';
 function undoRestore() {
   W.confirm('Данные вернутся к состоянию до последнего восстановления из копии.', 'Вернуть', () => {
     try {
-      const p = localStorage.getItem(PREV);
+      const p = localStorage.getItem(PREV());
       if (!p || !W.validState(JSON.parse(p))) return W.toast('Предыдущих данных нет');
-      localStorage.setItem(KEY, p); localStorage.removeItem(PREV);
+      localStorage.setItem(KEY(), p); localStorage.removeItem(PREV());
     } catch (e) { return W.toast('Не получилось'); }
     location.reload();
   });
@@ -197,8 +262,8 @@ function importBackup() {
       const n = s.decks.length, p = Object.keys(s.prog || {}).length;
       W.confirm(`Ваши текущие колоды и прогресс заменятся данными из копии (колод: ${n}, слов с прогрессом: ${p}). Если передумаете — в «Ещё» появится кнопка «Вернуть, как было».`, 'Восстановить', () => {
         try {
-          localStorage.setItem(PREV, JSON.stringify(W.S));
-          localStorage.setItem(KEY, JSON.stringify(s));
+          localStorage.setItem(PREV(), JSON.stringify(W.S));
+          s.mod = Date.now(); localStorage.setItem(KEY(), JSON.stringify(s));
         } catch (e) { return W.toast('Не удалось сохранить'); }
         location.reload();
       });

@@ -251,3 +251,10 @@ textarea { resize: vertical; }
 .set-row:last-child { border-bottom: 0; }
 .set-row select { width: auto; max-width: 55%; padding: 8px 10px; }
 .set-row input[type=checkbox] { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+
+/* аккаунт */
+.login { display: flex; flex-direction: column; gap: 8px; }
+.login .link { margin-left: 0; align-self: flex-start; }
+input[type=email], input[type=password] {
+  width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 11px 12px; font-size: 16px; color: var(--tx);
+}

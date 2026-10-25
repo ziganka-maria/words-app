@@ -1,8 +1,10 @@
 'use strict';
 (function () {
 const W = window.W;
-W.VERSION = '0.1';
+W.VERSION = '0.2';
 W.prepare();
+// вошедший пользователь — сразу открываем его данные
+if (W.acc) W.acc.boot();
 document.documentElement.dataset.lang = W.S.lang;
 W.applyTheme();
 document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => {
@@ -14,6 +16,7 @@ const st = history.state;
 if (st && (st.s > 0 || st.m)) history.go(-((st.s || 0) + (st.m ? 1 : 0)));
 else history.replaceState({ s: 0 }, '');
 W.showTab('decks');
+if (W.acc) W.acc.start();
 // просим браузер не стирать данные при нехватке места
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});

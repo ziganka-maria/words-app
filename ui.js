@@ -40,19 +40,48 @@ const ICONS = {
 };
 W.iconBtn = (name, label, onclick, cls) => h('button', { class: 'icon-btn ' + (cls || ''), 'aria-label': label, title: label, onclick }, W.icon(name));
 
-// ---------- озвучка (встроенные голоса телефона, работает без интернета, если голос установлен) ----------
+// ---------- озвучка ----------
+// английский: записи нейросетевого голоса (audio/en-us, audio/en-gb); если записи нет или нет сети —
+// голос телефона, причём выбираем лучший из установленных
 W.canSpeak = () => 'speechSynthesis' in window;
-W.speak = (text, lang) => {
-  if (!W.S.set.sound) return;
+W.audioDir = lang => lang === 'en' ? (W.S.set.voice === 'gb' ? 'en-gb' : 'en-us') : null;
+W.audioUrl = (text, lang) => { const d = W.audioDir(lang); return d ? 'audio/' + d + '/' + W.audioKey(text) + '.mp3' : null; };
+const voiceScore = (v, tag, lang) => (v.lang.replace('_', '-') === tag ? 4 : v.lang.slice(0, 2) === lang ? 2 : -99)
+  + (/natural|neural|premium|enhanced|siri/i.test(v.name) ? 3 : 0) + (/google/i.test(v.name) ? 2 : 0);
+const sysSpeak = (text, lang) => {
   if (!W.canSpeak()) return W.toast('Озвучка на этом устройстве недоступна');
   const tag = W.LANGS[lang].tts, voices = speechSynthesis.getVoices();
-  const u = new SpeechSynthesisUtterance(text.replace(/\([^)]*\)/g, ''));
+  const u = new SpeechSynthesisUtterance(text);
   u.lang = tag; u.rate = 0.9;
-  const v = voices.find(v => v.lang.replace('_', '-') === tag) || voices.find(v => v.lang.slice(0, 2) === lang);
-  if (v) u.voice = v;
+  const v = voices.slice().sort((a, b) => voiceScore(b, tag, lang) - voiceScore(a, tag, lang))[0];
+  if (v && voiceScore(v, tag, lang) > 0) u.voice = v;
   else if (voices.length) W.toast('Нет голоса для языка: ' + W.LANGS[lang].name + '. См. «Ещё» → «Озвучка»');
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
+};
+let player = null;
+W.speak = (text, lang) => {
+  if (!W.S.set.sound) return;
+  const t = W.speechText(text);
+  if (!t) return;
+  if (player) { player.pause(); player = null; }
+  if (W.canSpeak()) speechSynthesis.cancel();
+  const url = W.audioUrl(t, lang);
+  if (!url) return sysSpeak(t, lang);
+  const a = new Audio(url);
+  let fell = false;
+  const fallback = () => { if (!fell && player === a) { fell = true; sysSpeak(t, lang); } };
+  player = a;
+  a.onerror = fallback;
+  a.play().catch(e => { if (e.name !== 'NotAllowedError') fallback(); });
+};
+// докачиваем звук колоды в фоне, чтобы он был и без интернета
+W.prefetchAudio = cards => {
+  if (!navigator.onLine || !('caches' in window)) return;
+  const urls = [...new Set(cards.flatMap(c => [c.w, c.ex]).filter(Boolean).map(x => W.audioUrl(x, cards[0] && cards[0].lang)).filter(Boolean))];
+  let i = 0;
+  const next = () => { if (i < urls.length) fetch(urls[i++]).catch(() => {}).finally(next); };
+  for (let k = 0; k < 4; k++) next();
 };
 W.soundBtn = (text, lang) => W.S.set.sound ? W.iconBtn('sound', 'Озвучить', e => { e.stopPropagation(); W.speak(text, lang); }, 'snd') : null;
 
@@ -147,11 +176,14 @@ W.setLang = l => {
 };
 W.isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 W.standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-// данные поменялись в другой открытой копии приложения
-W.onExternalChange = () => {
+// данные сменились не здесь: другая вкладка (по умолчанию), сервер ('sync') или вход/выход ('switch').
+// Открытые экраны держат старые объекты колод, поэтому закрываем их
+W.onExternalChange = why => {
   document.documentElement.dataset.lang = W.S.lang;
+  W.applyTheme && W.applyTheme();
   if (stack.length) W.closeAll(); else W.renderTab();
-  W.toast('Данные обновлены из другой вкладки');
+  if (why === 'sync') W.toast('Подтянулись изменения с другого устройства');
+  else if (!why) W.toast('Данные обновлены из другой вкладки');
 };
 W.langSwitch = () => h('div', { class: 'seg', role: 'tablist' }, Object.keys(W.LANGS).map(l =>
   h('button', { class: W.S.lang === l ? 'on' : '', role: 'tab', 'aria-selected': String(W.S.lang === l), onclick: () => W.setLang(l) },
@@ -246,7 +278,7 @@ function createFolder() {
   const name = h('input', { type: 'text', placeholder: 'Например: Для работы', maxlength: 40 });
   W.modal('Новая папка', W.field('Название', name), [{ label: 'Создать', cls: 'primary', fn: () => {
     if (!name.value.trim()) { W.toast('Введите название'); return false; }
-    W.S.folders.push({ id: W.uid('f'), lang: W.S.lang, title: name.value.trim() }); W.save(); W.renderTab();
+    W.S.folders.push({ id: W.uid('f'), lang: W.S.lang, title: name.value.trim(), u: Date.now() }); W.save(); W.renderTab();
   } }]);
 }
 
@@ -255,15 +287,15 @@ function folderMenu(f) {
   W.modal('Папка', W.field('Название', name), [
     { label: 'Удалить папку', cls: 'danger', fn: () => {
       W.confirm('Папка исчезнет, а колоды из неё перейдут в «Мои колоды».', 'Удалить', () => {
-        W.S.folders = W.S.folders.filter(x => x.id !== f.id);
-        W.S.decks.forEach(d => { if (d.folder === f.id) d.folder = 'my'; });
+        W.S.folders = W.S.folders.filter(x => x.id !== f.id); W.bury('folder:' + f.id);
+        W.S.decks.forEach(d => { if (d.folder === f.id) { d.folder = 'my'; W.touch(d); } });
         W.save(); W.renderTab();
       });
       return false;
     } },
     { label: 'Сохранить', cls: 'primary', fn: () => {
       const x = W.S.folders.find(x => x.id === f.id);
-      if (x && name.value.trim()) { x.title = name.value.trim(); W.save(); W.renderTab(); }
+      if (x && name.value.trim()) { x.title = name.value.trim(); W.touch(x); W.save(); W.renderTab(); }
     } }]);
 }
 
@@ -279,7 +311,7 @@ function importDeck() {
       const r = W.parseImport(text.value);
       if (!r.cards.length) { W.toast('Не нашла ни одной строки «слово ; перевод»'); return false; }
       const d = W.newDeck(lang, name.value.trim() || 'Импорт', folder.value);
-      d.cards = r.cards.map(c => W.newCard(lang, c)); W.save();
+      d.cards = r.cards.map(c => W.newCard(lang, c)); W.touch(d); W.save();
       W.toast(`Добавлено: ${W.words(d.cards.length)}` + (r.skipped ? `, пропущено строк: ${r.skipped}` : ''));
       W.renderTab(); openDeck(d);
     } }]);
@@ -287,6 +319,7 @@ function importDeck() {
 
 // ---------- экран колоды ----------
 function openDeck(d) {
+  if (d.lang === 'en') setTimeout(() => W.prefetchAudio(d.cards), 800);
   W.push(el => {
     const render = () => {
       if (d.smart) d = W.smart(d.lang).find(x => x.id === d.id);
@@ -323,7 +356,7 @@ const STATUS = { new: 'новое', learning: 'учу', known: 'выучено' 
 W.cardRow = (c, o = {}) => {
   const st = W.status(c.id);
   const star = W.iconBtn('star', '', () => {
-    if (W.S.fav[c.id]) delete W.S.fav[c.id]; else W.S.fav[c.id] = 1;
+    if (W.S.fav[c.id]) { delete W.S.fav[c.id]; W.bury('fav:' + c.id); } else W.S.fav[c.id] = Date.now();
     W.save(); paint();
     o.onchange ? o.onchange() : W.renderTab();
   });
@@ -354,7 +387,7 @@ function cardMenu(c, o) {
     acts.push({ label: 'Изменить', cls: 'primary', fn: () => { editCard(d, c, o.onchange); } });
     acts.push({ label: 'Удалить', cls: 'danger', fn: () => {
       W.confirm('Слово «' + c.w + '» удалится из колоды «' + d.title + '».', 'Удалить', () => {
-        d.cards = d.cards.filter(x => x !== c); W.save(); o.onchange && o.onchange();
+        d.cards = d.cards.filter(x => x !== c); W.touch(d); W.save(); o.onchange && o.onchange();
       });
       return false;
     } });
@@ -366,7 +399,7 @@ function copyToDeck(c, after) {
   const decks = W.userDecks(c.lang);
   const add = d => {
     if (d.cards.some(x => x.id === c.id)) return W.toast('Это слово уже есть в «' + d.title + '»');
-    d.cards.push(Object.assign({}, c)); W.save();
+    d.cards.push(Object.assign({}, c)); W.touch(d); W.save();
     W.toast('Добавлено в «' + d.title + '»');
     after && after();
   };
@@ -393,11 +426,11 @@ function editCard(d, c, after) {
         if (!/^c/.test(c.id) && ['w', 't', 'ex', 'et', 'r', 'n'].some(k => v[k] !== (c[k] || ''))) {
           const old = c.id; c.id = W.uid('c');
           if (W.S.prog[old]) W.S.prog[c.id] = Object.assign({}, W.S.prog[old]);
-          if (W.S.fav[old]) W.S.fav[c.id] = 1;
+          if (W.S.fav[old]) W.S.fav[c.id] = Date.now();
         }
         Object.assign(c, v);
       } else d.cards.push(W.newCard(d.lang, v));
-      W.save(); after && after();
+      W.touch(d); W.save(); after && after();
     } }]);
 }
 
@@ -407,7 +440,7 @@ function addMany(d, after) {
     { label: 'Добавить', cls: 'primary', fn: () => {
       const r = W.parseImport(text.value);
       if (!r.cards.length) { W.toast('Не нашла ни одной строки «слово ; перевод»'); return false; }
-      d.cards.push(...r.cards.map(c => W.newCard(d.lang, c))); W.save();
+      d.cards.push(...r.cards.map(c => W.newCard(d.lang, c))); W.touch(d); W.save();
       W.toast('Добавлено: ' + W.words(r.cards.length) + (r.skipped ? `, пропущено строк: ${r.skipped}` : ''));
       after && after();
     } }]);
@@ -425,13 +458,13 @@ function deckMenu(d, render) {
     } }, 'Скопировать списком (для друга)')], [
     { label: 'Удалить', cls: 'danger', fn: () => {
       W.confirm('Колода «' + d.title + '» удалится. Прогресс по словам сохранится.', 'Удалить', () => {
-        W.S.decks = W.S.decks.filter(x => x !== d); W.save(); W.back();
+        W.S.decks = W.S.decks.filter(x => x !== d); W.bury('deck:' + d.id); W.save(); W.back();
       });
       return false;
     } },
     { label: 'Сохранить', cls: 'primary', fn: () => {
       d.title = name.value.trim() || d.title; d.emoji = emoji.value.trim() || '📝'; d.folder = folder.value;
-      W.save(); render();
+      W.touch(d); W.save(); render();
     } }]);
 }
 function showText(txt) { W.modal('Скопируйте текст', h('textarea', { rows: 10, readonly: true }, txt)); }
