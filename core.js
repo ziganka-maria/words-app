@@ -14,7 +14,7 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
   set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us' }
 });
@@ -26,12 +26,13 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
   for (const k in d) if (s[k] === undefined) s[k] = d[k];
   s.set = Object.assign(d.set, s.set);
+  for (const l in s.level) if (!s.level[l] || !['A0', 'A1', 'A2', 'B1', 'B2', 'C1'].includes(s.level[l].lv) || !s.level[l].ts) delete s.level[l];
   return s;
 };
 W.load = (key = KEY) => {
@@ -93,6 +94,9 @@ W.merge = (a, b) => {
     const x = r.gram[k], y = b.gram[k];
     r.gram[k] = !x ? y : { done: !!(x.done || y.done), best: Math.max(x.best || 0, y.best || 0) };
   }
+  // результат теста уровня — самый свежий
+  r.level = Object.assign({}, a.level);
+  for (const l in b.level) if (!r.level[l] || (b.level[l].ts || 0) > (r.level[l].ts || 0)) r.level[l] = b.level[l];
   r.fav = {};
   for (const id of new Set([...Object.keys(a.fav), ...Object.keys(b.fav)])) {
     const t = Math.max(+a.fav[id] || 0, +b.fav[id] || 0);
@@ -118,10 +122,10 @@ W.dayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).
 W.slug = s => s.toLowerCase().replace(/[^a-z0-9а-яёäöüß]+/g, '-').replace(/^-+|-+$/g, '') || 'x';
 W.uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
-const toCard = (a, lang, deckId, used) => {
+const toCard = (a, lang, deckId, used, reg) => {
   // 7-й элемент — другие верные ответы через «|». Внимание: id строится из слова,
   // поэтому написание встроенного слова после выпуска не менять — иначе пропадёт прогресс
-  const c = Array.isArray(a) ? { w: a[0], t: a[1], ex: a[2] || '', et: a[3] || '', r: a[4] || 'i', n: a[5] || '', a: a[6] || '' } : a;
+  const c = Array.isArray(a) ? { w: a[0], t: a[1], ex: a[2] || '', et: a[3] || '', r: a[4] || reg || 'i', n: a[5] || '', a: a[6] || '' } : a;
   let id = deckId + ':' + W.slug(c.w), k = 2;
   while (used.has(id)) id = deckId + ':' + W.slug(c.w) + '-' + k++;
   used.add(id);
@@ -136,7 +140,8 @@ W.prepare = () => {
     for (const d of f.decks) {
       const used = new Set();
       d.lang = lang; d.folder = f.id; d.builtin = true;
-      d.cards = d.cards.map(a => toCard(a, lang, d.id, used));
+      d.cards = d.cards.map(a => toCard(a, lang, d.id, used, d.reg));
+      d.cards.forEach(c => { c.lv = d.level || 'live'; });
     }
   }
 };
@@ -216,10 +221,23 @@ W.newBudget = lang => {
   return Math.max(0, S.set.newPerDay - (S.newToday.d === t ? S.newToday[lang] || 0 : 0));
 };
 
+W.LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+W.levelInfo = { A0: 'Начальный (до A1)', A1: 'A1 · Начальный', A2: 'A2 · Элементарный', B1: 'B1 · Средний', B2: 'B2 · Выше среднего', C1: 'C1 · Продвинутый' };
+W.userLevel = lang => (W.S.level[lang] && W.S.level[lang].lv) || 'A1';
+// новые слова на сегодня: по очереди из колод уровня пользователя и из «живого языка», потом остальные по уровню
+W.freshOrder = (cards, lang) => {
+  const lv = W.userLevel(lang) === 'A0' ? 'A1' : W.userLevel(lang);
+  const own = cards.filter(c => c.lv === lv), live = cards.filter(c => c.lv === 'live'), mine = cards.filter(c => !c.lv);
+  const rank = c => { const i = W.LEVELS.indexOf(c.lv); return i < 0 ? 99 : Math.abs(i - W.LEVELS.indexOf(lv)) + (i < W.LEVELS.indexOf(lv) ? 0.5 : 0); };
+  const rest = cards.filter(c => c.lv && c.lv !== lv && c.lv !== 'live').map((c, i) => [c, i]).sort((a, b) => rank(a[0]) - rank(b[0]) || a[1] - b[1]).map(x => x[0]);
+  const out = [];
+  for (let i = 0; i < Math.max(own.length, live.length, mine.length); i++) { if (mine[i]) out.push(mine[i]); if (own[i]) out.push(own[i]); if (live[i]) out.push(live[i]); }
+  return out.concat(rest);
+};
 W.queue = cards => {
   const t = W.dayNum(), P = W.S.prog;
   const due = cards.filter(c => P[c.id] && P[c.id].d <= t).sort((a, b) => P[a.id].d - P[b.id].d).slice(0, 50);
-  const fresh = cards.length ? cards.filter(c => !P[c.id]).slice(0, W.newBudget(cards[0].lang)) : [];
+  const fresh = cards.length ? W.freshOrder(cards.filter(c => !P[c.id]), cards[0].lang).slice(0, W.newBudget(cards[0].lang)) : [];
   return { due, fresh };
 };
 
@@ -295,6 +313,17 @@ W.check = (input, c) => {
     if (vNo.length >= 6 && lev(uNo, vNo) <= 1) close = true;
   }
   return close ? 'close' : 'bad';
+};
+
+// значения перевода по отдельности: «подарок; настоящее» → [подарок, настоящее]
+W.meanings = t => (t || '').toLowerCase().replace(/\([^)]*\)/g, ' ').split(/[;,]/).map(s => s.trim()).filter(Boolean);
+// у карточек есть общее значение — значит, это синонимы (gift и present — «подарок»)
+W.sameMeaning = (a, b) => { const m = new Set(W.meanings(a.t)); return W.meanings(b.t).some(x => m.has(x)); };
+// в «Письме»: если написан синоним с тем же значением, засчитываем как «почти»
+W.synonymHit = (input, c) => {
+  const key = W.meanings(c.t)[0];
+  if (!key || key.length < 4) return null; // «его», «уже», «из» — слишком общие
+  return W.allCards(c.lang).find(x => x.id !== c.id && W.meanings(x.t).includes(key) && W.check(input, x) === 'ok') || null;
 };
 
 // ---------- импорт / экспорт ----------

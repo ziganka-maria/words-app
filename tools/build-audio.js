@@ -4,13 +4,17 @@
 const fs = require('fs'), path = require('path'), vm = require('vm'), { spawnSync } = require('child_process');
 
 const APP = path.join(__dirname, '..');
-const [PIPER = 'C:/Users/Public/wordstest/piper', LAME = 'C:/Users/Public/wordstest/tools/node_modules/lamejs'] = process.argv.slice(2);
+// --prune — удалить записи текстов, которых больше нет в словаре (после правок примеров)
+const PRUNE = process.argv.includes('--prune');
+const [PIPER = 'C:/Users/Public/wordstest/piper', LAME = 'C:/Users/Public/wordstest/tools/node_modules/lamejs'] = process.argv.slice(2).filter(a => !a.startsWith('--'));
 const VOICES = { 'en-us': 'en_US-lessac-high', 'en-gb': 'en_GB-cori-high' };
 
 // грузим контент и ядро так же, как браузер
 const ctx = { console, addEventListener() {}, localStorage: { getItem: () => null, setItem() {} } };
 ctx.window = ctx; vm.createContext(ctx);
-for (const f of fs.readdirSync(APP).filter(f => /^(data|grammar|texts)-.*\.js$/.test(f)).concat('core.js'))
+// data-lib.js (помощник addDecks) — первым, core.js — последним; остальные в любом порядке
+const order = f => (f === 'data-lib.js' ? 0 : f === 'core.js' ? 2 : 1);
+for (const f of fs.readdirSync(APP).filter(f => /^(data|grammar|texts)-.*\.js$/.test(f)).concat('core.js').sort((a, b) => order(a) - order(b)))
   vm.runInContext(fs.readFileSync(path.join(APP, f), 'utf8'), ctx, { filename: f });
 const W = ctx.W; W.prepare();
 
@@ -58,5 +62,11 @@ for (const [dir, model] of Object.entries(VOICES)) {
     console.log('  готово', Math.min(i + 200, todo.length), '/', todo.length);
   }
   const size = fs.readdirSync(outDir).reduce((s, f) => s + fs.statSync(path.join(outDir, f)).size, 0);
+  if (PRUNE) {
+    const keep = new Set([...texts].map(t => W.audioKey(t) + '.mp3'));
+    const old = fs.readdirSync(outDir).filter(f => !keep.has(f));
+    old.forEach(f => fs.unlinkSync(path.join(outDir, f)));
+    console.log(dir, ': удалено устаревших', old.length);
+  }
   console.log(dir, ': файлов', fs.readdirSync(outDir).length, ',', (size / 1024 / 1024).toFixed(1), 'МБ');
 }

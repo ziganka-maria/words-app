@@ -114,7 +114,8 @@ function options(c, dir, cards) {
   for (const pool of pools) for (const x of pool) {
     if (out.length >= 4) break;
     const k = key(x);
-    if (x.id === c.id || used.has(k.toLowerCase())) continue;
+    // синонимы в варианты не берём: иначе верных ответов окажется два
+    if (x.id === c.id || used.has(k.toLowerCase()) || W.sameMeaning(x, c)) continue;
     used.add(k.toLowerCase()); out.push(k);
   }
   return W.shuffle(out);
@@ -226,7 +227,8 @@ function write(el, cards, title) {
     e.preventDefault();
     if (done) return next();
     if (!input.value.trim()) return;
-    settle(W.check(input.value, c), input.value.trim());
+    const verdict = W.check(input.value, c), syn = verdict === 'bad' ? W.synonymHit(input.value, c) : null;
+    settle(syn ? 'close' : verdict, input.value.trim(), syn);
   } }, prompt, input, keys, actions, res);
   const next = () => { clearTimeout(timer); q.shift(); ask(); };
   const start = list => { q = W.shuffle(list); total = q.length; firstOk = 0; missed = new Set(); W.put(s.body, form); ask(); };
@@ -253,7 +255,7 @@ function write(el, cards, title) {
       h('button', { type: 'submit', class: 'btn primary' }, 'Проверить'));
     if (document.activeElement !== input) input.focus();
   };
-  const settle = (verdict, typed) => {
+  const settle = (verdict, typed, syn) => {
     done = true; input.readOnly = true;
     const ok = verdict !== 'bad';
     if (ok && !missed.has(c.id)) firstOk++;
@@ -261,7 +263,8 @@ function write(el, cards, title) {
     W.record(c, ok);
     res.className = 'result ' + (verdict === 'ok' ? 'right' : verdict === 'close' ? 'close' : 'wrong');
     W.put(res,
-      h('b', null, verdict === 'ok' ? 'Верно!' : verdict === 'close' ? 'Почти! Засчитано.' : typed ? 'Неверно' : 'Ответ'),
+      h('b', null, verdict === 'ok' ? 'Верно!' : syn ? 'Засчитано!' : verdict === 'close' ? 'Почти! Засчитано.' : typed ? 'Неверно' : 'Ответ'),
+      syn ? h('div', null, '«' + syn.w + '» тоже так переводится. Но здесь загадано другое слово:') : null,
       verdict !== 'ok' ? h('div', null, 'Правильно: ', h('b', null, c.w), W.soundBtn(c.w, lang)) : null,
       typed && verdict === 'bad' ? h('div', { class: 'muted' }, 'Вы написали: ' + typed) : null,
       c.ex ? h('div', { class: 'ex' }, c.ex) : null);

@@ -6,17 +6,31 @@ const W = window.W, h = W.h;
 // ---------- грамматика ----------
 W.renderGrammar = root => {
   const lang = W.S.lang, list = (window.GRAMMAR || {})[lang] || [];
-  W.put(root, 
+  const done = l => !!(W.S.gram[l.id] && W.S.gram[l.id].done);
+  const next = list.find(l => !done(l));
+  const own = W.S.level[lang] && W.S.level[lang].lv;
+  const kids = [];
+  let lastLevel = null;
+  list.forEach((l, i) => {
+    if (l.level !== lastLevel) {
+      lastLevel = l.level;
+      const inLevel = list.filter(x => x.level === l.level);
+      kids.push(h('div', { class: 'lvl-head' }, W.levelInfo[l.level] || l.level,
+        h('span', { class: 'muted small' }, ' · пройдено ' + inLevel.filter(done).length + ' из ' + inLevel.length)));
+    }
+    const g = W.S.gram[l.id];
+    kids.push(h('button', { class: 'lesson', onclick: () => openLesson(l, i + 1) },
+      h('span', { class: 'l-num' + (done(l) ? ' done' : '') }, done(l) ? '✓' : i + 1),
+      h('span', { class: 'deck-main' },
+        h('span', { class: 'deck-title' }, l.title, l === next ? h('span', { class: 'tag-next' }, 'дальше') : null),
+        h('span', { class: 'muted small' }, l.sub + (g ? ' · лучший результат ' + g.best + '%' : '')))));
+  });
+  W.put(root,
     h('header', { class: 'head' }, h('h1', null, 'Грамматика'), W.langSwitch()),
-    h('p', { class: 'muted' }, 'Короткие уроки по порядку: правило простыми словами, примеры из живой речи и проверка.'),
-    h('div', { class: 'lessons' }, list.map((l, i) => {
-      const g = W.S.gram[l.id];
-      return h('button', { class: 'lesson', onclick: () => openLesson(l, i + 1) },
-        h('span', { class: 'l-num' + (g && g.done ? ' done' : '') }, g && g.done ? '✓' : i + 1),
-        h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, l.title),
-          h('span', { class: 'muted small' }, l.level + ' · ' + l.sub + (g ? ` · лучший результат ${g.best}%` : ''))));
-    })),
-    h('p', { class: 'muted small' }, 'Следующие уроки появятся в обновлениях.'));
+    h('p', { class: 'muted' }, 'Короткие уроки по порядку: правило простыми словами, примеры и проверка. Урок считается пройденным при 70% и выше.'),
+    own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
+    h('div', { class: 'lessons' }, kids),
+    list.length ? h('p', { class: 'muted small' }, lang === 'en' ? 'Уроки B1 и выше появятся в обновлениях.' : 'Новые уроки появятся в обновлениях.') : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
 };
 
 function block(b) {

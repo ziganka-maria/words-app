@@ -1,7 +1,5 @@
 // немецкий: [слово, перевод, пример, перевод примера, пометка n/i/s/r, заметка]
-window.CONTENT = window.CONTENT || {};
-CONTENT.de = { folders: [
-{ id: 'de-live', title: 'Живой язык', decks: [
+addDecks('de', 'de-live', 'Живой язык', [
 
 { id: 'de-feel', emoji: '🔥', title: 'Оценки и эмоции', desc: 'Как сказать «круто», «жесть» и «вот чёрт»', cards: [
   ["geil", "классный, крутой", "Das Konzert war voll geil!", "Концерт был просто классный!", "s", "У молодёжи — «круто». Со старшими и на работе лучше не говорить."],
@@ -72,5 +70,4 @@ CONTENT.de = { folders: [
   ["thx", "спасибо (thanks)", "Thx für deine Hilfe!", "Спасибо за помощь!", "i"]
 ]}
 
-]}
-]};
+]);

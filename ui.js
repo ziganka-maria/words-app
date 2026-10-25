@@ -219,10 +219,10 @@ function renderDecks() {
   const smart = h('div', { class: 'chips' }, W.smart(lang).map(d =>
     h('button', { class: 'chip', onclick: () => openDeck(d) }, d.emoji + ' ' + d.title + ' · ' + d.cards.length)));
 
-  const folders = W.builtinFolders(lang).map(f => ({ id: f.id, title: f.title, decks: f.decks, builtin: true }))
-    .concat(W.S.folders.filter(f => f.lang === lang).map(f => ({ id: f.id, title: f.title, decks: W.userDecks(lang).filter(d => d.folder === f.id), user: true })));
+  const folders = W.builtinFolders(lang).map(f => ({ id: f.id, lang, title: f.title, decks: f.decks, builtin: true }))
+    .concat(W.S.folders.filter(f => f.lang === lang).map(f => ({ id: f.id, title: f.title, decks: W.userDecks(lang).filter(d => d.folder === f.id), user: true, lang })));
   const known = new Set(W.S.folders.map(f => f.id));
-  folders.push({ id: 'my', title: 'Мои колоды', decks: W.userDecks(lang).filter(d => !known.has(d.folder)), mine: true });
+  folders.push({ id: 'my', lang, title: 'Мои колоды', decks: W.userDecks(lang).filter(d => !known.has(d.folder)), mine: true });
 
   // на iPhone вкладка Safari и иконка «Домой» хранят данные раздельно — предупреждаем заранее
   const iosTab = W.isIOS() && !W.standalone() ? h('div', { class: 'warn' },
@@ -230,7 +230,7 @@ function renderDecks() {
     'На iPhone слова и прогресс во вкладке Safari и в приложении с иконки хранятся отдельно. Нажмите «Поделиться» → «На экран „Домой“» и занимайтесь оттуда. Уже занимались здесь? Сохраните копию («Ещё» → «Сохранность») и восстановите её в установленном приложении.') : null;
   W.put(root,
     h('header', { class: 'head' }, h('h1', null, 'Живые слова'), W.langSwitch()),
-    iosTab, today, smart,
+    iosTab, W.levelCard ? W.levelCard() : null, today, smart,
     ...folders.map(f => folderBlock(f)),
     h('div', { class: 'row-btns' },
       h('button', { class: 'btn', onclick: () => createDeck() }, '+ Колода'),
@@ -238,11 +238,15 @@ function renderDecks() {
       h('button', { class: 'btn', onclick: () => importDeck() }, 'Импорт')));
 }
 
+const openFolders = new Map();
+W.expandFolder = (lang, id) => openFolders.set(lang + ':' + id, true);
 function folderBlock(f) {
   if (f.mine && !f.decks.length) return h('div', { class: 'folder' },
     h('div', { class: 'folder-title' }, f.title),
     h('p', { class: 'muted empty' }, 'Здесь появятся ваши колоды. Создайте свою или добавляйте слова из готовых через «⋯» у карточки.'));
-  const box = h('details', { class: 'folder', open: true },
+  // папки с классическим курсом по умолчанию свёрнуты; что открыл пользователь, помним до перезапуска
+  const key = f.lang + ':' + f.id, want = openFolders.has(key) ? openFolders.get(key) : !/^(en|de)-[abc]\d/.test(f.id);
+  const box = h('details', { class: 'folder', open: want, ontoggle: () => openFolders.set(key, box.open) },
     h('summary', { class: 'folder-title' }, f.title, h('span', { class: 'muted small' }, ' · ' + plural(f.decks.length, 'колода', 'колоды', 'колод')),
       f.user ? h('button', { class: 'link', onclick: e => { e.preventDefault(); folderMenu(f); } }, 'изменить') : null),
     f.decks.length ? f.decks.map(deckRow) : h('p', { class: 'muted empty' }, 'Пустая папка'));

@@ -1,7 +1,5 @@
 // английский: [слово, перевод, пример, перевод примера, пометка n/i/s/r, заметка]
-window.CONTENT = window.CONTENT || {};
-CONTENT.en = { folders: [
-{ id: 'en-live', title: 'Живой язык', decks: [
+addDecks('en', 'en-live', 'Живой язык', [
 
 { id: 'en-feel', emoji: '🔥', title: 'Оценки и эмоции', desc: 'Как сказать «круто», «так себе» и «обидно»', cards: [
   ["awesome", "классный, потрясающий", "That concert was awesome!", "Тот концерт был потрясающий!", "i"],
@@ -71,5 +69,4 @@ CONTENT.en = { folders: [
   ["JK", "шучу (just kidding)", "I'm moving to Mars. JK!", "Я переезжаю на Марс. Шучу!", "i"]
 ]}
 
-]}
-]};
+]);

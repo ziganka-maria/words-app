@@ -1,8 +1,8 @@
-const CACHE = 'words-v3';
+const CACHE = 'words-v4';
 // звук хранится отдельно и не стирается при обновлении приложения
 const AUDIO = 'words-audio-v1';
 const FILES = ['./', './index.html', './style.css', './core.js', './ui.js', './study.js', './more.js', './sync.js', './config.js', './boot.js',
-  './data-en.js', './data-de.js', './grammar-en.js', './grammar-de.js',
+  './data-lib.js', './data-en.js', './data-en-a1.js', './data-en-a1b.js', './data-en-a1c.js', './data-en-a2.js', './data-en-a2b.js', './data-en-a2c.js', './data-de.js', './grammar-en.js', './grammar-en2.js', './grammar-en3.js', './grammar-de.js', './test-en.js', './leveltest.js',
   './manifest.json', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
