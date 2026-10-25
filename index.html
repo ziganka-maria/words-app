@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#f5f6fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#12141c" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f3ecdf" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1a1815" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Слова">
@@ -12,22 +12,31 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="style.css">
 <title>Живые слова</title>
 </head>
 <body>
+<!-- эмблема: чёрная ласточка в вираже -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="swallow" viewBox="0 0 190 135">
+  <path d="M84 76 C64 74 42 74 6 85 C40 79 60 80 74 82 C58 93 42 109 18 130 C46 112 64 97 88 84 Z"/>
+  <path d="M120 72 C116 94 101 116 64 136 C88 111 98 93 100 76 Z"/>
+  <path d="M72 81 C88 71 108 60 128 52 C140 47 152 41 162 40 C169 39.5 175 42 179 45.5 C181 46.5 183.5 47.5 186 48.5 C183 49.5 180.5 50 178.5 50.5 C176 56 168 62 156 67 C130 78 98 88 72 81 Z"/>
+  <path d="M136 55 C123 32 99 13 58 3 C89 21 105 42 108 66 Z"/>
+</symbol></svg>
 <main>
   <section id="tab-decks"></section>
+  <section id="tab-read" hidden></section>
   <section id="tab-gram" hidden></section>
   <section id="tab-search" hidden></section>
   <section id="tab-more" hidden></section>
 </main>
 <div id="screens"></div>
 <nav>
-  <button data-tab="decks" class="on"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="14" height="14" rx="2"/><path d="M7 3h12a2 2 0 0 1 2 2v12"/></svg><span>Колоды</span></button>
-  <button data-tab="gram"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7M8 11h5"/></svg><span>Грамматика</span></button>
-  <button data-tab="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><span>Поиск</span></button>
-  <button data-tab="more"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Ещё</span></button>
+  <button data-tab="decks" class="on"><span>Колоды</span></button>
+  <button data-tab="read"><span>Чтение</span></button>
+  <button data-tab="gram"><span>Грамматика</span></button>
+  <button data-tab="more"><span>Профиль</span></button>
 </nav>
 <div id="modal" hidden></div>
 <script src="data-lib.js"></script>
@@ -44,12 +53,16 @@
 <script src="grammar-en3.js"></script>
 <script src="grammar-de.js"></script>
 <script src="test-en.js"></script>
+<script src="texts-en.js"></script>
+<script src="texts-en2.js"></script>
 <script src="config.js"></script>
 <script src="core.js"></script>
 <script src="ui.js"></script>
 <script src="study.js"></script>
 <script src="more.js"></script>
 <script src="leveltest.js"></script>
+<script src="rewards.js"></script>
+<script src="reading.js"></script>
 <script src="sync.js"></script>
 <script src="boot.js"></script>
 </body>

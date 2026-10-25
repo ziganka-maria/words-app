@@ -48,33 +48,40 @@ W.audioDir = lang => lang === 'en' ? (W.S.set.voice === 'gb' ? 'en-gb' : 'en-us'
 W.audioUrl = (text, lang) => { const d = W.audioDir(lang); return d ? 'audio/' + d + '/' + W.audioKey(text) + '.mp3' : null; };
 const voiceScore = (v, tag, lang) => (v.lang.replace('_', '-') === tag ? 4 : v.lang.slice(0, 2) === lang ? 2 : -99)
   + (/natural|neural|premium|enhanced|siri/i.test(v.name) ? 3 : 0) + (/google/i.test(v.name) ? 2 : 0);
-const sysSpeak = (text, lang) => {
-  if (!W.canSpeak()) return W.toast('Озвучка на этом устройстве недоступна');
+// голос телефона; done вызывается, когда фраза дочитана (или не прозвучала)
+const sysSpeak = (text, lang, done) => {
+  if (!W.canSpeak()) { W.toast('Озвучка на этом устройстве недоступна'); return done && done(); }
   const tag = W.LANGS[lang].tts, voices = speechSynthesis.getVoices();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = tag; u.rate = 0.9;
   const v = voices.slice().sort((a, b) => voiceScore(b, tag, lang) - voiceScore(a, tag, lang))[0];
   if (v && voiceScore(v, tag, lang) > 0) u.voice = v;
-  else if (voices.length) W.toast('Нет голоса для языка: ' + W.LANGS[lang].name + '. См. «Ещё» → «Озвучка»');
+  else if (voices.length) W.toast('Нет голоса для языка: ' + W.LANGS[lang].name + '. См. «Профиль» → «Озвучка»');
+  if (done) { u.onend = done; u.onerror = done; }
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 };
 let player = null;
-W.speak = (text, lang) => {
-  if (!W.S.set.sound) return;
+W.stopSpeak = () => { if (player) { player.pause(); player = null; } if (W.canSpeak()) speechSynthesis.cancel(); };
+// прочитать фразу и дождаться конца: запись нейросетевого голоса, а если её нет — голос телефона
+W.speakWait = (text, lang) => new Promise(res => {
   const t = W.speechText(text);
-  if (!t) return;
-  if (player) { player.pause(); player = null; }
-  if (W.canSpeak()) speechSynthesis.cancel();
+  if (!W.S.set.sound || !t) return res();
+  W.stopSpeak();
+  let finished = false;
+  const done = () => { if (!finished) { finished = true; clearTimeout(guard); res(); } };
+  const guard = setTimeout(done, 20000); // на всякий случай: ни одна фраза не должна «повесить» чтение
   const url = W.audioUrl(t, lang);
-  if (!url) return sysSpeak(t, lang);
+  if (!url) return sysSpeak(t, lang, done);
   const a = new Audio(url);
   let fell = false;
-  const fallback = () => { if (!fell && player === a) { fell = true; sysSpeak(t, lang); } };
+  const fallback = () => { if (!fell && player === a) { fell = true; sysSpeak(t, lang, done); } };
   player = a;
+  a.onended = done;
   a.onerror = fallback;
-  a.play().catch(e => { if (e.name !== 'NotAllowedError') fallback(); });
-};
+  a.play().catch(e => { if (e.name === 'NotAllowedError') done(); else fallback(); });
+});
+W.speak = (text, lang) => { W.speakWait(text, lang); };
 // докачиваем звук колоды в фоне, чтобы он был и без интернета
 W.prefetchAudio = cards => {
   if (!navigator.onLine || !('caches' in window)) return;
@@ -85,6 +92,13 @@ W.prefetchAudio = cards => {
 };
 W.soundBtn = (text, lang) => W.S.set.sound ? W.iconBtn('sound', 'Озвучить', e => { e.stopPropagation(); W.speak(text, lang); }, 'snd') : null;
 
+// эмблема-ласточка и строка «выпуска» в шапке
+W.emblem = cls => { const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); s.setAttribute('class', cls || 'emblem'); s.setAttribute('viewBox', '0 0 190 135'); s.setAttribute('aria-hidden', 'true'); s.innerHTML = '<use href="#swallow"/>'; return s; };
+W.issueLine = () => {
+  const d = new Date();
+  const n = Object.keys(W.S.days).length + 1; // номер выпуска — по числу дней с занятиями
+  return '№ ' + n + ' · ' + d.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' });
+};
 W.regBadge = r => h('span', { class: 'reg reg-' + r }, W.REG[r] || '');
 
 // ---------- окна ----------
@@ -152,6 +166,7 @@ window.addEventListener('popstate', () => {
   if (closed) {
     const top = stack[stack.length - 1];
     if (top && top.refresh) top.refresh(); else W.renderTab();
+    if (W.checkStamps) setTimeout(W.checkStamps, 400);
   }
 });
 W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
@@ -160,11 +175,11 @@ W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
 
 // ---------- вкладки ----------
 let tab = 'decks';
-const TABS = { decks: () => renderDecks(), gram: () => W.renderGrammar($('#tab-gram')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
-W.renderTab = () => TABS[tab]();
+const TABS = { decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
+W.renderTab = () => { TABS[tab](); if (W.checkStamps) setTimeout(W.checkStamps, 300); };
 W.showTab = t => {
   tab = t;
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === (t === 'search' ? 'decks' : t)));
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'tab-' + t; });
   W.renderTab();
   window.scrollTo(0, 0);
@@ -208,7 +223,7 @@ function renderDecks() {
         h('div', { class: 'muted' }, q.due.length || q.fresh.length
           ? `${q.due.length} повторить · ${q.fresh.length} новых`
           : 'На сегодня всё повторено 🎉')),
-      streak ? h('div', { class: 'streak', title: 'Дней подряд' }, '🔥 ', plural(streak, 'день', 'дня', 'дней')) : null),
+      streak ? h('div', { class: 'streak', title: 'Дней подряд' }, 'серия', h('b', null, String(streak)), plural(streak, 'день', 'дня', 'дней').replace(/^\d+ /, '')) : null),
     h('div', { class: 'bar' }, h('i', { style: `width:${c.total ? Math.round(c.known / c.total * 100) : 0}%` })),
     h('div', { class: 'muted small' }, `Выучено ${c.known} из ${c.total} · учу ${c.learning}`),
     h('button', { class: 'btn primary wide', onclick: () => {
@@ -229,7 +244,10 @@ function renderDecks() {
     h('b', null, 'Сначала установите приложение. '),
     'На iPhone слова и прогресс во вкладке Safari и в приложении с иконки хранятся отдельно. Нажмите «Поделиться» → «На экран „Домой“» и занимайтесь оттуда. Уже занимались здесь? Сохраните копию («Ещё» → «Сохранность») и восстановите её в установленном приложении.') : null;
   W.put(root,
-    h('header', { class: 'head' }, h('h1', null, 'Живые слова'), W.langSwitch()),
+    h('header', { class: 'head' },
+      h('div', { class: 'kicker head-line' }, h('span', null, W.issueLine()), h('button', { class: 'link', onclick: () => W.showTab('search') }, 'поиск')),
+      h('h1', null, h('span', { html: 'Живые<br>слова' }), W.emblem()),
+      W.langSwitch()),
     iosTab, W.levelCard ? W.levelCard() : null, today, smart,
     ...folders.map(f => folderBlock(f)),
     h('div', { class: 'row-btns' },
@@ -490,7 +508,8 @@ function renderSearch() {
       : [h('p', { class: 'muted empty' }, 'Ничего не нашлось. Можно добавить слово в свою колоду.')]));
   };
   input.addEventListener('input', run);
-  W.put(root, h('header', { class: 'head' }, h('h1', null, 'Поиск'), W.langSwitch()), input, list);
+  W.put(root, h('header', { class: 'head' }, h('div', { class: 'kicker' }, 'по всем колодам'), h('h1', null, 'Поиск'), W.langSwitch()),
+    h('button', { class: 'link', style: 'margin:0 0 8px', onclick: () => W.showTab('decks') }, '← к колодам'), input, list);
   run();
 }
 })();

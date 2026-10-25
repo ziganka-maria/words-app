@@ -134,7 +134,8 @@ W.renderMore = root => {
   let prev = null;
   try { prev = localStorage.getItem(PREV()); } catch (e) {}
   W.put(root, 
-    h('header', { class: 'head' }, h('h1', null, 'Ещё')),
+    h('header', { class: 'head' }, h('div', { class: 'kicker' }, 'профиль и настройки'), h('h1', null, 'Профиль')),
+    W.profileBlock ? W.profileBlock() : null,
     accountPanel(),
     h('section', { class: 'panel' }, h('h3', null, 'Учёба'),
       h('label', { class: 'set-row' }, h('span', null, 'Новых слов в день'), sel('newPerDay', [[5, '5'], [10, '10'], [15, '15'], [20, '20'], [30, '30']])),

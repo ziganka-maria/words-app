@@ -14,9 +14,9 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
-  set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us' }
+  set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us', goal: 20 }
 });
 W.defaults = defaults;
 
@@ -26,7 +26,7 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
@@ -97,6 +97,13 @@ W.merge = (a, b) => {
   // результат теста уровня — самый свежий
   r.level = Object.assign({}, a.level);
   for (const l in b.level) if (!r.level[l] || (b.level[l].ts || 0) > (r.level[l].ts || 0)) r.level[l] = b.level[l];
+  // марки: дата первого получения
+  r.stamps = Object.assign({}, a.stamps);
+  for (const k in b.stamps) r.stamps[k] = r.stamps[k] ? Math.min(r.stamps[k], b.stamps[k]) : b.stamps[k];
+  // тексты и тренажёры: лучший результат и большее число прохождений
+  const best = (x, y) => !x ? y : !y ? x : Object.assign({}, x, y, { n: Math.max(x.n || 0, y.n || 0), best: Math.max(x.best || 0, y.best || 0), ts: Math.max(x.ts || 0, y.ts || 0) });
+  r.read = {}; for (const k of new Set([...Object.keys(a.read), ...Object.keys(b.read)])) r.read[k] = best(a.read[k], b.read[k]);
+  r.drill = {}; for (const k of new Set([...Object.keys(a.drill), ...Object.keys(b.drill)])) r.drill[k] = best(a.drill[k], b.drill[k]);
   r.fav = {};
   for (const id of new Set([...Object.keys(a.fav), ...Object.keys(b.fav)])) {
     const t = Math.max(+a.fav[id] || 0, +b.fav[id] || 0);
