@@ -1,0 +1,459 @@
+'use strict';
+// общий интерфейс: помощники, экраны, вкладка «Колоды», экран колоды
+(function () {
+const W = window.W;
+const $ = s => document.querySelector(s);
+
+W.h = (tag, props, ...kids) => {
+  const e = document.createElement(tag);
+  if (props) for (const k in props) {
+    const v = props[k];
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat(Infinity)) if (c != null && c !== false) e.append(c.nodeType ? c : document.createTextNode(c));
+  return e;
+};
+const h = W.h;
+// как replaceChildren, но пропускает null/false (иначе на экране появляется слово «null»)
+W.put = (el, ...kids) => el.replaceChildren(...kids.flat(Infinity).filter(k => k != null && k !== false));
+
+W.toast = msg => {
+  const t = h('div', { class: 'toast' }, msg);
+  document.body.append(t);
+  setTimeout(() => t.classList.add('out'), 1800);
+  setTimeout(() => t.remove(), 2200);
+};
+
+W.icon = name => h('span', { class: 'ic', 'aria-hidden': 'true', html: ICONS[name] || '' });
+const ICONS = {
+  back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  close: '<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  sound: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
+  more: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
+  swap: '<svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>'
+};
+W.iconBtn = (name, label, onclick, cls) => h('button', { class: 'icon-btn ' + (cls || ''), 'aria-label': label, title: label, onclick }, W.icon(name));
+
+// ---------- озвучка (встроенные голоса телефона, работает без интернета, если голос установлен) ----------
+W.canSpeak = () => 'speechSynthesis' in window;
+W.speak = (text, lang) => {
+  if (!W.S.set.sound) return;
+  if (!W.canSpeak()) return W.toast('Озвучка на этом устройстве недоступна');
+  const tag = W.LANGS[lang].tts, voices = speechSynthesis.getVoices();
+  const u = new SpeechSynthesisUtterance(text.replace(/\([^)]*\)/g, ''));
+  u.lang = tag; u.rate = 0.9;
+  const v = voices.find(v => v.lang.replace('_', '-') === tag) || voices.find(v => v.lang.slice(0, 2) === lang);
+  if (v) u.voice = v;
+  else if (voices.length) W.toast('Нет голоса для языка: ' + W.LANGS[lang].name + '. См. «Ещё» → «Озвучка»');
+  speechSynthesis.cancel();
+  speechSynthesis.speak(u);
+};
+W.soundBtn = (text, lang) => W.S.set.sound ? W.iconBtn('sound', 'Озвучить', e => { e.stopPropagation(); W.speak(text, lang); }, 'snd') : null;
+
+W.regBadge = r => h('span', { class: 'reg reg-' + r }, W.REG[r] || '');
+
+// ---------- окна ----------
+// у открытого окна своя запись в истории: кнопка «назад» на Android закрывает окно, а не приложение
+let modalEntry = false, pendingBack = false;
+const hideModal = () => { const m = $('#modal'); m.hidden = true; W.put(m); };
+W.closeModal = () => {
+  if (pendingBack) return;
+  if (modalEntry) { pendingBack = true; history.back(); } else hideModal();
+};
+W.modal = (title, body, actions) => {
+  const m = $('#modal');
+  const close = W.closeModal;
+  if (!modalEntry) { history.pushState({ s: stack.length, m: 1 }, ''); modalEntry = true; }
+  const box = h('div', { class: 'sheet', role: 'dialog', 'aria-label': title },
+    h('div', { class: 'sheet-head' }, h('b', null, title), W.iconBtn('close', 'Закрыть', close)),
+    h('div', { class: 'sheet-body' }, body),
+    actions && actions.length ? h('div', { class: 'sheet-actions' }, actions.map(a =>
+      // если кнопка открыла следующее окно, его не закрываем
+      h('button', { class: 'btn ' + (a.cls || ''), onclick: () => { if (a.fn() !== false && m.firstChild === box) close(); } }, a.label))) : null);
+  W.put(m, box);
+  m.hidden = false;
+  m.onclick = e => { if (e.target === m) close(); };
+  const f = box.querySelector('input,textarea,select');
+  if (f) setTimeout(() => f.focus(), 50);
+  return close;
+};
+W.confirm = (text, okLabel, fn) => W.modal('Точно?', h('p', null, text), [
+  { label: 'Отмена', cls: 'ghost', fn: () => {} }, { label: okLabel, cls: 'danger', fn }]);
+W.field = (label, input) => h('label', { class: 'field' }, h('span', null, label), input);
+W.folderSelect = (lang, current) => {
+  const s = h('select', null, h('option', { value: 'my' }, 'Мои колоды'),
+    W.S.folders.filter(f => f.lang === lang).map(f => h('option', { value: f.id }, f.title)));
+  s.value = current || 'my';
+  return s;
+};
+
+// ---------- экраны поверх вкладок (кнопка «назад» на Android закрывает верхний) ----------
+const stack = [];
+W.push = build => {
+  const el = h('div', { class: 'screen' });
+  $('#screens').append(el);
+  const item = { el, refresh: null };
+  stack.push(item);
+  // экран, открытый из окна, занимает запись окна в истории
+  if (modalEntry) { modalEntry = false; hideModal(); history.replaceState({ s: stack.length }, ''); }
+  else history.pushState({ s: stack.length }, '');
+  item.refresh = build(el) || null;
+  el.scrollTop = 0;
+  return item;
+};
+// pendingBack защищает от двойного тапа: второй history.back() вывел бы из приложения
+W.back = () => { if (stack.length && !pendingBack) { pendingBack = true; history.back(); } };
+W.closeAll = () => {
+  const n = stack.length + (modalEntry ? 1 : 0);
+  if (n && !pendingBack) { pendingBack = true; history.go(-n); }
+};
+window.addEventListener('popstate', () => {
+  const st = history.state || {}, want = st.s || 0;
+  pendingBack = false;
+  let closed = false;
+  while (stack.length > want) { stack.pop().el.remove(); closed = true; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (!st.m) { modalEntry = false; hideModal(); }
+  if (closed) {
+    const top = stack[stack.length - 1];
+    if (top && top.refresh) top.refresh(); else W.renderTab();
+  }
+});
+W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
+  W.iconBtn(kind || 'back', kind === 'close' ? 'Закрыть' : 'Назад', W.back),
+  h('div', { class: 'tb-title' }, title), h('div', { class: 'tb-right' }, right || null));
+
+// ---------- вкладки ----------
+let tab = 'decks';
+const TABS = { decks: () => renderDecks(), gram: () => W.renderGrammar($('#tab-gram')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
+W.renderTab = () => TABS[tab]();
+W.showTab = t => {
+  tab = t;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === t));
+  document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'tab-' + t; });
+  W.renderTab();
+  window.scrollTo(0, 0);
+};
+W.setLang = l => {
+  W.S.lang = l; W.save();
+  document.documentElement.dataset.lang = l;
+  W.renderTab();
+};
+W.isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+W.standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+// данные поменялись в другой открытой копии приложения
+W.onExternalChange = () => {
+  document.documentElement.dataset.lang = W.S.lang;
+  if (stack.length) W.closeAll(); else W.renderTab();
+  W.toast('Данные обновлены из другой вкладки');
+};
+W.langSwitch = () => h('div', { class: 'seg', role: 'tablist' }, Object.keys(W.LANGS).map(l =>
+  h('button', { class: W.S.lang === l ? 'on' : '', role: 'tab', 'aria-selected': String(W.S.lang === l), onclick: () => W.setLang(l) },
+    h('b', null, W.LANGS[l].short), ' ', W.LANGS[l].name)));
+
+const plural = (n, one, few, many) => {
+  const a = n % 10, b = n % 100;
+  return n + ' ' + (a === 1 && b !== 11 ? one : a >= 2 && a <= 4 && (b < 12 || b > 14) ? few : many);
+};
+W.plural = plural;
+W.words = n => plural(n, 'слово', 'слова', 'слов');
+const deckCards = d => d.cards.filter(W.vis);
+
+// ---------- «Колоды» ----------
+function renderDecks() {
+  const root = $('#tab-decks'), lang = W.S.lang;
+  const all = W.allCards(lang), c = W.counts(all), q = W.queue(all);
+  const streak = W.streak();
+  const today = h('div', { class: 'today' },
+    h('div', { class: 'today-top' },
+      h('div', null, h('div', { class: 'today-title' }, 'Сегодня'),
+        h('div', { class: 'muted' }, q.due.length || q.fresh.length
+          ? `${q.due.length} повторить · ${q.fresh.length} новых`
+          : 'На сегодня всё повторено 🎉')),
+      streak ? h('div', { class: 'streak', title: 'Дней подряд' }, '🔥 ', plural(streak, 'день', 'дня', 'дней')) : null),
+    h('div', { class: 'bar' }, h('i', { style: `width:${c.total ? Math.round(c.known / c.total * 100) : 0}%` })),
+    h('div', { class: 'muted small' }, `Выучено ${c.known} из ${c.total} · учу ${c.learning}`),
+    h('button', { class: 'btn primary wide', onclick: () => {
+      if (q.due.length + q.fresh.length) W.study('learn', [...q.due, ...q.fresh], 'Сегодня', { queued: true });
+      else W.study('learn', W.shuffle(all.filter(x => W.S.prog[x.id])).slice(0, 15), 'Повторение', { queued: true, extra: true });
+    } }, q.due.length + q.fresh.length ? 'Начать заучивание' : 'Повторить ещё немного'));
+
+  const smart = h('div', { class: 'chips' }, W.smart(lang).map(d =>
+    h('button', { class: 'chip', onclick: () => openDeck(d) }, d.emoji + ' ' + d.title + ' · ' + d.cards.length)));
+
+  const folders = W.builtinFolders(lang).map(f => ({ id: f.id, title: f.title, decks: f.decks, builtin: true }))
+    .concat(W.S.folders.filter(f => f.lang === lang).map(f => ({ id: f.id, title: f.title, decks: W.userDecks(lang).filter(d => d.folder === f.id), user: true })));
+  const known = new Set(W.S.folders.map(f => f.id));
+  folders.push({ id: 'my', title: 'Мои колоды', decks: W.userDecks(lang).filter(d => !known.has(d.folder)), mine: true });
+
+  // на iPhone вкладка Safari и иконка «Домой» хранят данные раздельно — предупреждаем заранее
+  const iosTab = W.isIOS() && !W.standalone() ? h('div', { class: 'warn' },
+    h('b', null, 'Сначала установите приложение. '),
+    'На iPhone слова и прогресс во вкладке Safari и в приложении с иконки хранятся отдельно. Нажмите «Поделиться» → «На экран „Домой“» и занимайтесь оттуда. Уже занимались здесь? Сохраните копию («Ещё» → «Сохранность») и восстановите её в установленном приложении.') : null;
+  W.put(root,
+    h('header', { class: 'head' }, h('h1', null, 'Живые слова'), W.langSwitch()),
+    iosTab, today, smart,
+    ...folders.map(f => folderBlock(f)),
+    h('div', { class: 'row-btns' },
+      h('button', { class: 'btn', onclick: () => createDeck() }, '+ Колода'),
+      h('button', { class: 'btn', onclick: () => createFolder() }, '+ Папка'),
+      h('button', { class: 'btn', onclick: () => importDeck() }, 'Импорт')));
+}
+
+function folderBlock(f) {
+  if (f.mine && !f.decks.length) return h('div', { class: 'folder' },
+    h('div', { class: 'folder-title' }, f.title),
+    h('p', { class: 'muted empty' }, 'Здесь появятся ваши колоды. Создайте свою или добавляйте слова из готовых через «⋯» у карточки.'));
+  const box = h('details', { class: 'folder', open: true },
+    h('summary', { class: 'folder-title' }, f.title, h('span', { class: 'muted small' }, ' · ' + plural(f.decks.length, 'колода', 'колоды', 'колод')),
+      f.user ? h('button', { class: 'link', onclick: e => { e.preventDefault(); folderMenu(f); } }, 'изменить') : null),
+    f.decks.length ? f.decks.map(deckRow) : h('p', { class: 'muted empty' }, 'Пустая папка'));
+  return box;
+}
+
+function deckRow(d) {
+  const cards = deckCards(d), c = W.counts(cards);
+  return h('button', { class: 'deck', onclick: () => openDeck(d) },
+    h('span', { class: 'deck-emoji' }, d.emoji || '📝'),
+    h('span', { class: 'deck-main' },
+      h('span', { class: 'deck-title' }, d.title),
+      h('span', { class: 'muted small' }, W.words(c.total) + (c.known ? ` · выучено ${c.known}` : '')),
+      h('span', { class: 'bar thin' }, h('i', { style: `width:${c.total ? Math.round(c.known / c.total * 100) : 0}%` }))),
+    c.due ? h('span', { class: 'due', title: 'К повторению' }, c.due) : null);
+}
+
+// ---------- создание колод и папок ----------
+function createDeck(after) {
+  const lang = W.S.lang;
+  const name = h('input', { type: 'text', placeholder: 'Например: Путешествия', maxlength: 60 });
+  const folder = W.folderSelect(lang);
+  W.modal('Новая колода · ' + W.LANGS[lang].name, [W.field('Название', name), W.field('Папка', folder)], [
+    { label: 'Создать', cls: 'primary', fn: () => {
+      if (!name.value.trim()) { W.toast('Введите название'); return false; }
+      const d = W.newDeck(lang, name.value.trim(), folder.value);
+      if (after) after(d); else { W.renderTab(); openDeck(d); }
+    } }]);
+}
+W.createDeck = createDeck;
+
+function createFolder() {
+  const name = h('input', { type: 'text', placeholder: 'Например: Для работы', maxlength: 40 });
+  W.modal('Новая папка', W.field('Название', name), [{ label: 'Создать', cls: 'primary', fn: () => {
+    if (!name.value.trim()) { W.toast('Введите название'); return false; }
+    W.S.folders.push({ id: W.uid('f'), lang: W.S.lang, title: name.value.trim() }); W.save(); W.renderTab();
+  } }]);
+}
+
+function folderMenu(f) {
+  const name = h('input', { type: 'text', value: f.title, maxlength: 40 });
+  W.modal('Папка', W.field('Название', name), [
+    { label: 'Удалить папку', cls: 'danger', fn: () => {
+      W.confirm('Папка исчезнет, а колоды из неё перейдут в «Мои колоды».', 'Удалить', () => {
+        W.S.folders = W.S.folders.filter(x => x.id !== f.id);
+        W.S.decks.forEach(d => { if (d.folder === f.id) d.folder = 'my'; });
+        W.save(); W.renderTab();
+      });
+      return false;
+    } },
+    { label: 'Сохранить', cls: 'primary', fn: () => {
+      const x = W.S.folders.find(x => x.id === f.id);
+      if (x && name.value.trim()) { x.title = name.value.trim(); W.save(); W.renderTab(); }
+    } }]);
+}
+
+function importDeck() {
+  const lang = W.S.lang;
+  const name = h('input', { type: 'text', placeholder: 'Название колоды', maxlength: 60 });
+  const text = h('textarea', { rows: 8, placeholder: 'hang out ; тусоваться\nmy bad ; мой косяк ; Oh, my bad!\n\nМожно вставить список из Quizlet (через Tab).' });
+  const folder = W.folderSelect(lang);
+  W.modal('Импорт слов · ' + W.LANGS[lang].name, [
+    h('p', { class: 'muted small' }, 'Каждое слово — с новой строки: слово, перевод, пример, перевод примера. Разделитель — точка с запятой, Tab или тире с пробелами.'),
+    W.field('Название', name), W.field('Список', text), W.field('Папка', folder)], [
+    { label: 'Создать колоду', cls: 'primary', fn: () => {
+      const r = W.parseImport(text.value);
+      if (!r.cards.length) { W.toast('Не нашла ни одной строки «слово ; перевод»'); return false; }
+      const d = W.newDeck(lang, name.value.trim() || 'Импорт', folder.value);
+      d.cards = r.cards.map(c => W.newCard(lang, c)); W.save();
+      W.toast(`Добавлено: ${W.words(d.cards.length)}` + (r.skipped ? `, пропущено строк: ${r.skipped}` : ''));
+      W.renderTab(); openDeck(d);
+    } }]);
+}
+
+// ---------- экран колоды ----------
+function openDeck(d) {
+  W.push(el => {
+    const render = () => {
+      if (d.smart) d = W.smart(d.lang).find(x => x.id === d.id);
+      const cards = d.smart ? d.cards : deckCards(d), c = W.counts(cards), lang = d.lang;
+      const qd = W.queue(cards), due = [...qd.due, ...qd.fresh]; // новые — в пределах дневного лимита
+      const mode = (key, title, sub, need) => h('button', { class: 'mode', disabled: cards.length < need, onclick: () => W.study(key, cards, d.title) },
+        h('b', null, title), h('span', { class: 'muted small' }, sub));
+      W.put(el, 
+        W.topbar(d.title, d.builtin || d.smart ? null : W.iconBtn('more', 'Меню колоды', () => deckMenu(d, render))),
+        d.desc ? h('p', { class: 'muted' }, d.desc) : null,
+        h('div', { class: 'stats' },
+          h('span', null, h('b', null, c.total), ' всего'), h('span', null, h('b', null, c.new), ' новых'),
+          h('span', null, h('b', null, c.learning), ' учу'), h('span', null, h('b', null, c.known), ' выучено')),
+        cards.length ? h('div', { class: 'modes' },
+          h('button', { class: 'mode main', onclick: () => W.study('learn', due.length ? due : (cards.some(x => W.S.prog[x.id]) ? cards.filter(x => W.S.prog[x.id]) : cards), d.title, { queued: !!due.length }) },
+            h('b', null, 'Заучивание'), h('span', { class: 'small' }, due.length ? `${qd.due.length} повторить · ${qd.fresh.length} новых` : c.new ? 'лимит новых на сегодня исчерпан — можно повторить' : 'всё повторено — можно ещё раз')),
+          mode('cards', 'Карточки', 'листать и переворачивать', 1),
+          mode('test', 'Тест', 'выбрать перевод', 2),
+          mode('match', 'Подбор пар', 'на скорость', 3),
+          mode('write', 'Письмо', 'написать слово', 1))
+          : h('p', { class: 'muted empty' }, d.smart ? (d.id === 'smart:fav' ? 'Нажмите ☆ у любой карточки, и она появится здесь.' : 'Слова, на которых вы ошибались, соберутся здесь сами.') : 'В колоде пока нет слов.'),
+        !d.builtin && !d.smart ? h('div', { class: 'row-btns' },
+          h('button', { class: 'btn primary', onclick: () => editCard(d, null, render) }, '+ Слово'),
+          h('button', { class: 'btn', onclick: () => addMany(d, render) }, 'Добавить списком')) : null,
+        h('div', { class: 'list' }, cards.map(x => W.cardRow(x, { deck: d, onchange: render }))));
+    };
+    render();
+    return render;
+  });
+}
+W.openDeck = openDeck;
+
+const STATUS = { new: 'новое', learning: 'учу', known: 'выучено' };
+W.cardRow = (c, o = {}) => {
+  const st = W.status(c.id);
+  const star = W.iconBtn('star', '', () => {
+    if (W.S.fav[c.id]) delete W.S.fav[c.id]; else W.S.fav[c.id] = 1;
+    W.save(); paint();
+    o.onchange ? o.onchange() : W.renderTab();
+  });
+  // звёздочку перекрашиваем на месте: строка может стоять там, где список не перерисовывается
+  const paint = () => {
+    const on = !!W.S.fav[c.id];
+    star.className = 'icon-btn fav' + (on ? ' on' : '');
+    star.title = on ? 'Убрать из избранного' : 'В избранное';
+    star.setAttribute('aria-label', star.title);
+  };
+  paint();
+  return h('div', { class: 'card-row' },
+    h('div', { class: 'cr-main' },
+      h('div', { class: 'cr-word' }, h('b', null, c.w), W.soundBtn(c.w, c.lang)),
+      h('div', null, c.t),
+      c.ex ? h('div', { class: 'cr-ex' }, c.ex, c.et ? h('span', { class: 'muted' }, ' — ' + c.et) : null) : null,
+      h('div', { class: 'cr-tags' }, W.regBadge(c.r), h('span', { class: 'st st-' + st }, STATUS[st]),
+        o.showDeck ? h('span', { class: 'muted small' }, o.showDeck) : null)),
+    h('div', { class: 'cr-side' },
+      star,
+      W.iconBtn('more', 'Действия', () => cardMenu(c, o))));
+};
+
+function cardMenu(c, o) {
+  const d = o.deck, mine = d && !d.builtin && !d.smart;
+  const acts = [{ label: 'В мою колоду…', cls: '', fn: () => { copyToDeck(c, o.onchange); } }];
+  if (mine) {
+    acts.push({ label: 'Изменить', cls: 'primary', fn: () => { editCard(d, c, o.onchange); } });
+    acts.push({ label: 'Удалить', cls: 'danger', fn: () => {
+      W.confirm('Слово «' + c.w + '» удалится из колоды «' + d.title + '».', 'Удалить', () => {
+        d.cards = d.cards.filter(x => x !== c); W.save(); o.onchange && o.onchange();
+      });
+      return false;
+    } });
+  }
+  W.modal(c.w, h('p', { class: 'muted' }, c.n || c.t), acts);
+}
+
+function copyToDeck(c, after) {
+  const decks = W.userDecks(c.lang);
+  const add = d => {
+    if (d.cards.some(x => x.id === c.id)) return W.toast('Это слово уже есть в «' + d.title + '»');
+    d.cards.push(Object.assign({}, c)); W.save();
+    W.toast('Добавлено в «' + d.title + '»');
+    after && after();
+  };
+  if (!decks.length) return createDeck(add);
+  W.modal('В какую колоду?', h('div', { class: 'pick' },
+    decks.map(d => h('button', { class: 'btn wide', onclick: () => { W.closeModal(); add(d); } }, (d.emoji || '📝') + ' ' + d.title)),
+    h('button', { class: 'btn ghost wide', onclick: () => createDeck(add) }, '+ Новая колода')));
+}
+
+function editCard(d, c, after) {
+  const f = c || {};
+  const inp = (v, ph) => h('input', { type: 'text', value: v || '', placeholder: ph || '', autocapitalize: 'off', spellcheck: 'false' });
+  const w = inp(f.w, d.lang === 'de' ? 'z. B. der Kumpel' : 'e.g. hang out'), t = inp(f.t, 'перевод'),
+    ex = inp(f.ex, 'пример (необязательно)'), et = inp(f.et, 'перевод примера'), n = inp(f.n, 'заметка');
+  const r = h('select', null, Object.keys(W.REG).map(k => h('option', { value: k }, W.REG[k])));
+  r.value = f.r || 'i';
+  W.modal(c ? 'Изменить слово' : 'Новое слово', [W.field('Слово', w), W.field('Перевод', t), W.field('Пример', ex),
+    W.field('Перевод примера', et), W.field('Пометка', r), W.field('Заметка', n)], [
+    { label: 'Сохранить', cls: 'primary', fn: () => {
+      if (!w.value.trim() || !t.value.trim()) { W.toast('Нужны слово и перевод'); return false; }
+      const v = { w: w.value.trim(), t: t.value.trim(), ex: ex.value.trim(), et: et.value.trim(), r: r.value, n: n.value.trim() };
+      if (c) {
+        // копия встроенной карточки после правки живёт своей жизнью: новый id, прогресс переносим
+        if (!/^c/.test(c.id) && ['w', 't', 'ex', 'et', 'r', 'n'].some(k => v[k] !== (c[k] || ''))) {
+          const old = c.id; c.id = W.uid('c');
+          if (W.S.prog[old]) W.S.prog[c.id] = Object.assign({}, W.S.prog[old]);
+          if (W.S.fav[old]) W.S.fav[c.id] = 1;
+        }
+        Object.assign(c, v);
+      } else d.cards.push(W.newCard(d.lang, v));
+      W.save(); after && after();
+    } }]);
+}
+
+function addMany(d, after) {
+  const text = h('textarea', { rows: 8, placeholder: 'слово ; перевод ; пример ; перевод примера' });
+  W.modal('Добавить списком', [h('p', { class: 'muted small' }, 'Каждое слово с новой строки. Разделитель — «;», Tab или « - ».'), text], [
+    { label: 'Добавить', cls: 'primary', fn: () => {
+      const r = W.parseImport(text.value);
+      if (!r.cards.length) { W.toast('Не нашла ни одной строки «слово ; перевод»'); return false; }
+      d.cards.push(...r.cards.map(c => W.newCard(d.lang, c))); W.save();
+      W.toast('Добавлено: ' + W.words(r.cards.length) + (r.skipped ? `, пропущено строк: ${r.skipped}` : ''));
+      after && after();
+    } }]);
+}
+
+function deckMenu(d, render) {
+  const name = h('input', { type: 'text', value: d.title, maxlength: 60 });
+  const emoji = h('input', { type: 'text', value: d.emoji || '📝', maxlength: 12, class: 'emoji-in' });
+  const folder = W.folderSelect(d.lang, d.folder);
+  W.modal('Колода', [W.field('Название', name), W.field('Значок', emoji), W.field('Папка', folder),
+    h('button', { class: 'btn wide', onclick: () => {
+      const txt = W.exportText(d.cards);
+      const done = () => W.toast('Список скопирован — можно отправить другу');
+      if (navigator.clipboard) navigator.clipboard.writeText(txt).then(done, () => showText(txt)); else showText(txt);
+    } }, 'Скопировать списком (для друга)')], [
+    { label: 'Удалить', cls: 'danger', fn: () => {
+      W.confirm('Колода «' + d.title + '» удалится. Прогресс по словам сохранится.', 'Удалить', () => {
+        W.S.decks = W.S.decks.filter(x => x !== d); W.save(); W.back();
+      });
+      return false;
+    } },
+    { label: 'Сохранить', cls: 'primary', fn: () => {
+      d.title = name.value.trim() || d.title; d.emoji = emoji.value.trim() || '📝'; d.folder = folder.value;
+      W.save(); render();
+    } }]);
+}
+function showText(txt) { W.modal('Скопируйте текст', h('textarea', { rows: 10, readonly: true }, txt)); }
+
+// ---------- поиск ----------
+let query = '';
+function renderSearch() {
+  const root = $('#tab-search');
+  const input = h('input', { type: 'search', placeholder: 'Слово или перевод…', value: query, autocapitalize: 'off', spellcheck: 'false' });
+  const list = h('div', { class: 'list' });
+  const run = () => {
+    query = input.value;
+    const q = query.trim().toLowerCase();
+    if (!q) { W.put(list, h('p', { class: 'muted empty' }, 'Ищу по всем колодам выбранного языка: по слову, переводу и примерам.')); return; }
+    const lang = W.S.lang, where = new Map();
+    for (const d of W.allDecks(lang)) for (const c of d.cards) if (!where.has(c.id)) where.set(c.id, d.title);
+    const hits = W.allCards(lang).filter(c => [c.w, c.t, c.ex, c.et].some(s => (s || '').toLowerCase().includes(q))).slice(0, 60);
+    W.put(list, ...(hits.length ? hits.map(c => W.cardRow(c, { showDeck: where.get(c.id), onchange: run }))
+      : [h('p', { class: 'muted empty' }, 'Ничего не нашлось. Можно добавить слово в свою колоду.')]));
+  };
+  input.addEventListener('input', run);
+  W.put(root, h('header', { class: 'head' }, h('h1', null, 'Поиск'), W.langSwitch()), input, list);
+  run();
+}
+})();
