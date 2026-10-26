@@ -49,7 +49,7 @@ GRAMMAR.en.push(
     { q: '___ I need is a long holiday.', o: ['That', 'What', 'Which'], a: 1, w: 'What I need is…' },
     { q: 'It was my sister ___ told me the news.', o: ['which', 'who', 'what'], a: 1, w: 'It was + человек + who.' },
     { q: '___ you have to do is sign here.', o: ['All', 'Every', 'Each'], a: 0, w: 'All you have to do is…' },
-    { q: 'It was in 2010 ___ we moved to London.', o: ['that', 'when', 'which'], a: 0, w: 'It was … that.' },
+    { q: 'It was in 2010 ___ we moved to London.', o: ['that', 'where', 'which'], a: 0, w: 'It was … that.' },
     { q: 'What she did ___ call her lawyer.', o: ['is', 'was', 'did'], a: 1, w: 'Прошлое — was.' },
     { q: 'Выделите «именно деньги»: It’s ___ worries me.', o: ['the money what', 'the money that', 'money which it'], a: 1, w: 'It’s the money that…' },
     { q: 'Перепишите с усилением: I want some peace. → What I want ___ some peace.', t: ['is'], w: 'What I want is some peace.' },
@@ -75,9 +75,9 @@ GRAMMAR.en.push(
   quiz: [
     { q: 'It ___ that the company will close.', o: ['says', 'is said', 'has said'], a: 1, w: 'Безлично — It is said that…' },
     { q: 'He is believed ___ abroad last week.', o: ['to go', 'to have gone', 'going'], a: 1, w: 'Прошлое — to have gone.' },
-    { q: 'She is thought ___ in Paris at the moment.', o: ['to live', 'to be living', 'to have lived'], a: 1, w: 'Сейчас, процесс — to be living.' },
-    { q: 'The minister ___ to announce his resignation today.', o: ['is expected', 'expects', 'is expecting'], a: 0, w: 'Ожидается — is expected to.' },
-    { q: 'It ___ reported that the fire was caused by a cigarette.', o: ['has been', 'has', 'is being'], a: 0, w: 'It has been reported that…' },
+    { q: 'She is thought ___ in Paris at the moment.', o: ['to be lived', 'to be living', 'to have lived'], a: 1, w: 'Сейчас, процесс — to be living.' },
+    { q: 'Ожидается, что министр объявит об отставке: The minister ___ to announce his resignation today.', o: ['is expected', 'is expect', 'expecting'], a: 0, w: 'Ожидается — is expected to.' },
+    { q: 'It ___ reported that the fire was caused by a cigarette.', o: ['has been', 'has', 'have been'], a: 0, w: 'It has been reported that…' },
     { q: 'The painting ___ worth millions.', o: ['is said to be', 'is said being', 'says to be'], a: 0, w: 'is said to be.' },
     { q: 'Перепишите: People say he is a genius. → He ___ a genius.', t: ['is said to be'], w: 'He is said to be a genius.' },
     { q: 'Перепишите: They believe she stole it. → She is believed ___ it.', t: ['to have stolen'], w: 'She is believed to have stolen it.' }
@@ -105,8 +105,8 @@ GRAMMAR.en.push(
     { q: "I'd rather you ___ that to anyone.", o: ["don't say", "didn't say", "not say"], a: 1, w: "I'd rather + кто + Past." },
     { q: "I'd rather ___ at home tonight.", o: ['stay', 'stayed', 'to stay'], a: 0, w: 'О себе — без сдвига: I’d rather stay.' },
     { q: 'He talks as if he ___ the boss.', o: ['is being', 'were', 'will be'], a: 1, w: 'as if + Past (were).' },
-    { q: 'The doctor suggested that she ___ more rest.', o: ['gets', 'get', 'got'], a: 1, w: 'Сослагательное — get без -s.' },
-    { q: 'It is essential that the report ___ finished today.', o: ['is', 'be', 'was'], a: 1, w: 'Сослагательное — be.' },
+    { q: 'The doctor suggested that she ___ more rest.', o: ['gets', 'get', 'to get'], a: 1, w: 'Сослагательное — get без -s (в британском возможно и should get).' },
+    { q: 'It is essential that the report ___ finished today.', o: ['will be', 'be', 'was'], a: 1, w: 'Сослагательное — be.' },
     { q: "Допишите: It's high time you ___ (start) studying.", t: ['started'], w: "It's high time you started studying." },
     { q: 'Допишите: They insisted that he ___ (leave) immediately.', t: ['leave', 'should leave'], w: 'They insisted that he leave (should leave).' }
   ]
@@ -153,7 +153,7 @@ GRAMMAR.en.push(
     { t: 'ex', rows: [
       ["Is he coming? — I don't think so.", 'Он придёт? — Не думаю.'], ["I'm afraid not.", 'Боюсь, что нет.'],
       ["I can't swim. — Neither can I.", 'Я не умею плавать. — Я тоже.'], ['Which cake do you want? — The chocolate one.', 'Какой торт ты хочешь? — Шоколадный.'],
-      ["You don't have to come, but I'd like you to.", 'Ты не обязан приходить, но я бы хотел.']] },
+      ["You don't have to come, but I'd like you to.", 'Ты не обязан приходить, но я бы хотел, чтобы ты пришёл.']] },
     { t: 'warn', h: 'Говорят <i>I <b>don’t think so</b></i>, а не «I think not so». Форма <i>I think not</i> существует, но звучит книжно.' },
     { t: 'tip', h: 'В ответах «я тоже» глагол повторяет время фразы: <i>I went there. — So <b>did</b> I. I’ve been there. — So <b>have</b> I.</i>' }
   ],

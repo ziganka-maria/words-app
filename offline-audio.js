@@ -16,13 +16,10 @@ W.allAudioTexts = lang => {
 };
 
 let job = null;
-// сколько уже в телефоне
-const countCached = async urls => {
-  const c = await caches.open(AUDIO_CACHE);
-  let n = 0;
-  for (const u of urls) if (await c.match(u)) n++;
-  return n;
-};
+// что уже в телефоне: один запрос списка вместо проверки каждой записи (их тысячи)
+const path = u => new URL(u, location.href).pathname;
+const cachedSet = async () => new Set((await (await caches.open(AUDIO_CACHE)).keys()).map(r => new URL(r.url).pathname));
+const countCached = async urls => { const have = await cachedSet(); return urls.filter(u => have.has(path(u))).length; };
 
 W.audioPanel = () => {
   const lang = 'en';
@@ -50,8 +47,8 @@ W.audioPanel = () => {
     const me = job = { stop: false };
     W.put(btn, 'Остановить');
     const c = await caches.open(AUDIO_CACHE);
-    const todo = [];
-    for (const u of urls) if (!(await c.match(u))) todo.push(u);
+    const have0 = await cachedSet();
+    const todo = urls.filter(u => !have0.has(path(u)));
     let have = urls.length - todo.length, i = 0, errors = 0;
     const worker = async () => {
       while (!me.stop && i < todo.length) {
