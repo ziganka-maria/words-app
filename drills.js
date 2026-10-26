@@ -6,7 +6,9 @@ const W = window.W, h = W.h;
 W.drillDone = (id, kind, pct) => {
   const S = W.S; S.drill = S.drill || {};
   const p = S.drill[id];
-  S.drill[id] = { kind, n: (p ? p.n : 0) + 1, best: Math.max(pct, p ? p.best : 0), ts: Date.now() };
+  const days = Object.assign({}, p && p.days); days[W.dayKey()] = 1;
+  S.drill[id] = { kind, n: (p ? p.n : 0) + 1, best: Math.max(pct, p ? p.best : 0), ts: Date.now(), days };
+  W.markDay();
   W.save();
 };
 
@@ -28,7 +30,8 @@ const dictationPool = lang => {
   const fromCards = W.allCards(lang).filter(c => c.ex && (c.lv === lv || c.lv === 'live')).map(c => ({ en: c.ex, ru: c.et }));
   const fromTexts = ((window.TEXTS || {})[lang] || []).filter(t => t.level === lv || (lv === 'A1' && t.level === 'A1'))
     .flatMap(t => t.p.flat()).filter(s => s[0].split(' ').length <= 12 && !/[«»:]/.test(s[0])).map(s => ({ en: s[0], ru: s[1] }));
-  return fromCards.concat(fromTexts).filter(x => x.en.split(' ').length >= 3);
+  // без дефисов и тире: иначе подсветка верных слов съезжает
+  return fromCards.concat(fromTexts).filter(x => x.en.split(' ').length >= 3 && !/[-—–]/.test(x.en));
 };
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -57,8 +60,9 @@ const shell = (el, title) => {
   return { body, progress: (d, n) => { bar.style.width = Math.round(d / n * 100) + '%'; count.textContent = d + ' / ' + n; } };
 };
 const finish = (s, id, kind, right, total, again, extra) => {
-  const pct = Math.round(right / total * 100);
-  W.drillDone(id, kind, pct);
+  const pct = total ? Math.round(right / total * 100) : 0;
+  // засчитываем только настоящую попытку: хотя бы один верный ответ
+  if (right > 0) W.drillDone(id, kind, pct);
   W.put(s.body, h('div', { class: 'summary' }, h('div', { class: 'big' }, right + ' из ' + total),
     h('p', null, pct === 100 ? 'Без единой ошибки!' : pct >= 70 ? 'Хороший результат.' : 'Стоит повторить ещё раз.'),
     extra || null,
@@ -86,7 +90,10 @@ function openIrregular(lang) {
           e.preventDefault();
           if (done) { i++; return ask(); }
           if (!p1.value.trim() || !p2.value.trim()) return;
-          const ok1 = v.past.some(x => W.canon(p1.value) === x), ok2 = v.pp.some(x => W.canon(p2.value) === x);
+          // «was/were» или «burnt burned» — каждая введённая форма должна быть верной
+          const parts = s => W.canon(s.replace(/\//g, ' ')).split(' ').filter(Boolean);
+          const fits = (s, forms) => { const p = parts(s); return p.length > 0 && p.every(x => forms.includes(x)); };
+          const ok1 = fits(p1.value, v.past), ok2 = fits(p2.value, v.pp);
           const ok = ok1 && ok2;
           done = true; p1.readOnly = p2.readOnly = true;
           if (ok) right++; else wrong.push(v);
@@ -178,7 +185,7 @@ function openDictation(lang) {
         const acts = h('div', { class: 'w-actions' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => W.speakSlow ? W.speakSlow(q.en, lang) : play() }, 'Ещё раз'), h('button', { type: 'submit', class: 'btn primary' }, 'Проверить'));
         form.append(acts, res);
         W.put(s.body, form);
-        setTimeout(play, 300);
+        setTimeout(() => { if (el.isConnected) play(); }, 300);
       };
       ask();
     };
@@ -199,10 +206,11 @@ function openSpeak(lang) {
     const pool = () => {
       const learned = W.allCards(lang).filter(c => W.S.prog[c.id] && c.w.split(' ').length <= 3 && /^[A-Za-zäöüßÄÖÜ' -]+$/.test(c.w));
       const lv = W.userLevel(lang) === 'A0' ? 'A1' : W.userLevel(lang);
-      return learned.length >= 6 ? learned : W.allCards(lang).filter(c => c.lv === lv && c.w.split(' ').length <= 2 && /^[A-Za-zäöüßÄÖÜ' -]+$/.test(c.w));
+      return learned.length >= 6 ? learned : W.allCards(lang).filter(c => (c.lv === lv || c.lv === 'live') && c.w.split(' ').length <= 2 && /^[A-Za-zäöüßÄÖÜ' -]+$/.test(c.w));
     };
     const start = () => {
       const qs = W.shuffle(pool()).slice(0, 8);
+      if (!qs.length) return W.put(s.body, h('div', { class: 'summary' }, h('p', null, 'Пока не из чего составить упражнение — сначала поучите слова.'), h('button', { class: 'btn primary', onclick: W.back }, 'Понятно')));
       let i = 0, right = 0;
       const ask = () => {
         s.progress(i, qs.length);

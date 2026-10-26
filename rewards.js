@@ -10,8 +10,9 @@ W.lines = () => {
   const S = W.S;
   const reviews = Object.values(S.days).reduce((a, b) => a + b, 0);
   const lessons = Object.values(S.gram).filter(g => g.done).length;
-  const texts = Object.keys(S.read || {}).length;
-  const drills = Object.values(S.drill || {}).reduce((a, d) => a + (d.n || 0), 0);
+  const texts = Object.keys(S.read || {}).filter(W.textRead).length;
+  // тренажёр приносит строки один раз в день — накрутить повторными заходами нельзя
+  const drills = Object.values(S.drill || {}).reduce((a, d) => a + Object.keys(d.days || {}).length, 0);
   return reviews + lessons * 20 + texts * 30 + drills * 10;
 };
 W.rank = () => {
@@ -45,10 +46,10 @@ const deckDone = () => ['en', 'de'].some(lang => W.allDecks(lang).some(d => d.ca
 W.STAMPS = [
   // серия, id, название, за что, значок, номинал, цвет, условие
   ['Первые шаги', 'first-swallow', 'Первая ласточка', 'Урок грамматики без единой ошибки', 'swallow', 'A1', 'blue', () => Object.values(W.S.gram).some(g => g.best === 100)],
-  ['Первые шаги', 'first-word', 'Первое слово', 'Первое выученное слово', 'star', '1', 'red', () => known() >= 1],
+  ['Первые шаги', 'first-word', 'Первое слово', 'Слово, которое вы помните уже несколько дней', 'star', '1', 'red', () => known() >= 1],
   ['Первые шаги', 'level-test', 'Проверка пера', 'Пройден тест уровня', 'globe', '?', 'green', () => Object.keys(W.S.level).length > 0],
-  ['Первые шаги', 'own-deck', 'Своя рубрика', 'Создана своя колода', 'quill', '1', 'gold', () => W.S.decks.some(d => d.cards.length > 0)],
-  ['Первые шаги', 'first-text', 'Первое письмо', 'Прочитан первый текст', 'letter', '1', 'red', () => Object.keys(W.S.read || {}).length >= 1],
+  ['Первые шаги', 'own-deck', 'Своя рубрика', 'Создана своя колода', 'quill', '1', 'gold', () => W.S.decks.some(d => !d.fromTexts && d.cards.length > 0)],
+  ['Первые шаги', 'first-text', 'Первое письмо', 'Прочитан первый текст', 'letter', '1', 'red', () => Object.keys(W.S.read || {}).filter(W.textRead).length >= 1],
   ['Первые шаги', 'first-drill', 'Первая тренировка', 'Пройден первый тренажёр', 'key', '1', 'blue', () => Object.keys(W.S.drill || {}).length >= 1],
   ['Упорство', 'streak-3', 'Три дня', 'Три дня подряд', 'flame', '3', 'red', () => W.bestStreak() >= 3],
   ['Упорство', 'streak-7', 'Неделя', 'Семь дней подряд', 'flame', '7', 'red', () => W.bestStreak() >= 7],
@@ -62,17 +63,17 @@ W.STAMPS = [
   ['Словарь', 'known-1000', 'Тысяча слов', 'Выучено 1000 слов', 'laurel', '1000', 'gold', () => known() >= 1000],
   ['Словарь', 'deck-done', 'Колода целиком', 'Выучена целая колода', 'plane', '★', 'red', deckDone],
   ['Словарь', 'live-done', 'Свой человек', 'Выучен весь «Живой язык» одного языка', 'swallow', '★', 'gold', () => ['en', 'de'].some(l => { const c = W.allDecks(l).filter(d => d.cards[0] && d.cards[0].lv === 'live').flatMap(d => d.cards); return c.length && c.every(x => W.status(x.id) === 'known'); })],
-  ['Грамматика и чтение', 'lessons-a1', 'Глава A1', 'Пройдены все уроки A1', 'quill', 'A1', 'blue', () => lessonsDone('A1')],
-  ['Грамматика и чтение', 'lessons-a2', 'Глава A2', 'Пройдены все уроки A2', 'quill', 'A2', 'blue', () => lessonsDone('A2')],
-  ['Грамматика и чтение', 'texts-5', 'Читатель', 'Прочитано 5 текстов', 'letter', '5', 'green', () => Object.keys(W.S.read || {}).length >= 5],
-  ['Грамматика и чтение', 'texts-15', 'Книжный червь', 'Прочитано 15 текстов', 'letter', '15', 'gold', () => Object.keys(W.S.read || {}).length >= 15],
+  ['Грамматика и чтение', 'lessons-a1', 'Глава A1', 'Пройдены все уроки A1 (английский)', 'quill', 'A1', 'blue', () => lessonsDone('A1')],
+  ['Грамматика и чтение', 'lessons-a2', 'Глава A2', 'Пройдены все уроки A2 (английский)', 'quill', 'A2', 'blue', () => lessonsDone('A2')],
+  ['Грамматика и чтение', 'texts-5', 'Читатель', 'Прочитано 5 текстов', 'letter', '5', 'green', () => Object.keys(W.S.read || {}).filter(W.textRead).length >= 5],
+  ['Грамматика и чтение', 'texts-15', 'Книжный червь', 'Прочитано 15 текстов', 'letter', '15', 'gold', () => Object.keys(W.S.read || {}).filter(W.textRead).length >= 15],
   ['Грамматика и чтение', 'dictation', 'Острый слух', 'Диктант без ошибок', 'ear', '★', 'red', () => Object.values(W.S.drill || {}).some(d => d.kind === 'dictation' && d.best === 100)],
-  ['Грамматика и чтение', 'speak', 'Голос', 'Первое упражнение на произношение', 'mic', '1', 'green', () => !!(W.S.drill || {})['speak-en'] || !!(W.S.drill || {})['speak-de']]
+  ['Грамматика и чтение', 'speak', 'Голос', 'Первое упражнение на произношение (нужны Chrome или Safari и интернет)', 'mic', '1', 'green', () => !!(W.S.drill || {})['speak-en'] || !!(W.S.drill || {})['speak-de']]
 ].map(([series, id, title, desc, icon, val, color, test]) => ({ series, id, title, desc, icon, val, color, test }));
 
 // лучшая серия за всё время (а не только текущая)
 W.bestStreak = () => {
-  const days = Object.keys(W.S.days).filter(k => W.S.days[k] > 0).sort();
+  const days = [...new Set(Object.keys(W.S.days).concat(Object.keys(W.S.act || {})))].filter(W.active).sort();
   let best = 0, run = 0, prev = null;
   for (const k of days) {
     const d = new Date(k + 'T12:00:00');
@@ -97,10 +98,12 @@ W.checkStamps = () => {
     const S = W.S; S.stamps = S.stamps || {};
     const fresh = W.STAMPS.filter(s => !S.stamps[s.id] && (() => { try { return s.test(); } catch (e) { return false; } })());
     if (!fresh.length) return;
+    // открыто другое окно — подождём: марка выдастся при следующей проверке, с уведомлением
+    if (!document.getElementById('modal').hidden) return;
     for (const s of fresh) S.stamps[s.id] = Date.now();
     W.save();
     const s = fresh[0];
-    if (document.getElementById('modal').hidden) W.modal('Новая марка', h('div', { class: 'center' },
+    W.modal('Новая марка', h('div', { class: 'center' },
       h('div', { class: 'kicker' }, 'в ваш альбом'), W.stampEl(s, true, true),
       h('p', null, h('b', null, s.title)), h('p', { class: 'muted' }, s.desc),
       fresh.length > 1 ? h('p', { class: 'muted small' }, 'И ещё ' + W.plural(fresh.length - 1, 'марка', 'марки', 'марок') + ' — смотрите в альбоме.') : null),
@@ -130,7 +133,7 @@ W.profileBlock = () => {
   const pct = r.need ? Math.round((r.lines - r.from) / (r.need - r.from) * 100) : 100;
   // неделя: пн–вс текущей недели
   const now = new Date(), monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
-  const week = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map((d, i) => { const x = new Date(monday); x.setDate(monday.getDate() + i); return h('span', { class: W.S.days[W.dayKey(x)] ? 'x' : '' }, d); });
+  const week = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map((d, i) => { const x = new Date(monday); x.setDate(monday.getDate() + i); return h('span', { class: W.active(W.dayKey(x)) ? 'x' : '' }, d); });
   const recent = W.STAMPS.filter(s => got[s.id]).sort((a, b) => got[b.id] - got[a.id]).slice(0, 3);
   return h('section', { class: 'profile' },
     h('h2', null, name),

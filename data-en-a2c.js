@@ -58,7 +58,7 @@ addDecks('en', 'en-a2', 'Базовый английский · A2', [
 { id: 'a2-verbs3', emoji: '🔨', title: 'Глаголы A2 · 3', level: 'A2', reg: 'n', cards: [
   ["brush", "чистить щёткой; щётка", "I brush my teeth.", "Я чищу зубы."],
   ["climb", "карабкаться, подниматься", "We climb the mountain.", "Мы поднимаемся на гору.", "", "Буква b не читается: «клайм»."],
-  ["dream", "мечтать; видеть сон; мечта", "I dream about the sea.", "Мне снится море."],
+  ["dream", "мечтать; видеть сон; мечта", "I dream about the sea.", "Мне снится море.", "", "Dream — dreamt/dreamed — dreamt/dreamed."],
   ["fix", "чинить; закреплять", "He fixes the bike.", "Он чинит велосипед."],
   ["follow", "следовать, идти за", "Follow me, please.", "Идите за мной, пожалуйста."],
   ["kick", "пинать, ударять ногой", "He kicks the ball.", "Он бьёт по мячу."],
@@ -67,7 +67,7 @@ addDecks('en', 'en-a2', 'Базовый английский · A2', [
   ["point", "указывать; пункт", "He points at the map.", "Он показывает на карту."],
   ["pour", "наливать, лить", "Pour some water into the glass.", "Налей воды в стакан."],
   ["record", "записывать", "I record the lesson.", "Я записываю урок."],
-  ["smell", "пахнуть; нюхать; запах", "The soup smells good.", "Суп вкусно пахнет."],
+  ["smell", "пахнуть; нюхать; запах", "The soup smells good.", "Суп вкусно пахнет.", "", "Smell — smelt/smelled — smelt/smelled."],
   ["taste", "пробовать на вкус; иметь вкус", "Taste the soup.", "Попробуй суп."],
   ["touch", "касаться, трогать", "Don't touch the paint.", "Не трогай краску."],
   ["whisper", "шептать", "She whispers in my ear.", "Она шепчет мне на ухо."],
@@ -103,7 +103,7 @@ addDecks('en', 'en-a2', 'Базовый английский · A2', [
   ["understand", "понимать", "I don't understand this word.", "Я не понимаю это слово.", "", "Understand — understood — understood."],
   ["bite", "кусать", "The dog bit him.", "Собака укусила его.", "", "Bite — bit — bitten."],
   ["blow", "дуть", "The wind blows hard.", "Ветер дует сильно.", "", "Blow — blew — blown."],
-  ["burn", "гореть, жечь", "The fire burns all night.", "Огонь горит всю ночь.", "", "Burn — burnt/burned."],
+  ["burn", "гореть, жечь", "The fire burns all night.", "Огонь горит всю ночь.", "", "Burn — burnt/burned — burnt/burned."],
   ["dig", "копать", "He digs a hole.", "Он копает яму.", "", "Dig — dug — dug."],
   ["lead", "вести, возглавлять", "The road leads to the lake.", "Дорога ведёт к озеру.", "", "Lead — led — led."],
   ["set", "ставить, устанавливать", "Set the table.", "Накрой на стол.", "", "Set — set — set. Set the table — «накрывать на стол»."]

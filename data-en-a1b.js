@@ -99,7 +99,7 @@ addDecks('en', 'en-a1', 'Базовый английский · A1', [
   ["frog", "лягушка", "The frog jumps into the water.", "Лягушка прыгает в воду."],
   ["butterfly", "бабочка", "A butterfly is on the flower.", "Бабочка сидит на цветке."],
   ["bee", "пчела", "A bee makes honey.", "Пчела делает мёд."],
-  ["fly", "муха; летать", "There is a fly in my soup.", "В моём супе муха.", "", "И существительное «муха», и глагол «летать»."],
+  ["fly", "муха; летать", "There is a fly in my soup.", "В моём супе муха.", "", "Fly — flew — flown. И существительное «муха», и глагол «летать»."],
   ["zoo", "зоопарк", "Children love the zoo.", "Дети любят зоопарк."]
 ]},
 

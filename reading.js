@@ -3,17 +3,21 @@
 (function () {
 const W = window.W, h = W.h;
 const TEXTS = () => window.TEXTS || {};
+W.READ_PASS = 70; // текст считается прочитанным, если на вопросы ответили не меньше чем на 70%
+W.textRead = id => { const r = (W.S.read || {})[id]; return !!r && r.best >= W.READ_PASS; };
 
 // ---------- поиск слова в словаре с учётом форм ----------
 const dict = {};
+const key = v => v.toLowerCase().replace(/[’‘]/g, "'").replace(/[!?.,]/g, '').trim();
 const buildDict = lang => {
   if (dict[lang]) return dict[lang];
-  const words = new Map(), forms = new Map();
-  for (const c of W.allCards(lang)) {
-    for (const v of [c.w].concat(c.a ? c.a.split('|') : [])) {
-      const k = v.toLowerCase().replace(/[!?.]/g, '').trim();
-      if (k && !words.has(k)) words.set(k, c);
-    }
+  const words = new Map(), forms = new Map(), phrases = [];
+  const cards = W.allCards(lang);
+  // сначала сами слова карточек, потом их «другие верные ответы» — чтобы fall (осень) не перебивал fall (падать)
+  for (const c of cards) { const k = key(c.w); if (k && !words.has(k)) words.set(k, c); }
+  for (const c of cards) for (const v of (c.a ? c.a.split('|') : [])) { const k = key(v); if (k && !words.has(k)) words.set(k, c); }
+  for (const [k, c] of words) if (k.includes(' ')) phrases.push({ parts: k.split(' '), c });
+  for (const c of cards) {
     // формы из заметок: «Go — went — gone.», «Множественное число: children.»
     const n = c.n || '';
     for (const m of n.matchAll(/([A-Za-z]+) — ([a-z]+)(?:\/([a-z]+))?(?: — ([a-z]+)(?:\/([a-z]+))?)?/g))
@@ -21,63 +25,76 @@ const buildDict = lang => {
     const pl = n.match(/Множественное число: ([a-z]+)/);
     if (pl && !forms.has(pl[1])) forms.set(pl[1], c);
   }
-  return (dict[lang] = { words, forms });
+  return (dict[lang] = { words, forms, phrases });
 };
-// варианты основы: worked → work, studies → study, running → run, bigger → big
+// варианты основы: worked → work, studies → study, running → run, bigger → big; основы короче 3 букв не берём (best ≠ be)
 const stems = w => {
-  const out = [w];
-  const add = x => { if (x && x.length > 1 && !out.includes(x)) out.push(x); };
+  const out = [];
+  const add = x => { if (x && x.length >= 3 && x !== w && !out.includes(x)) out.push(x); };
   if (w.endsWith("'s")) add(w.slice(0, -2));
   if (w.endsWith('ies')) add(w.slice(0, -3) + 'y');
-  if (w.endsWith('es')) add(w.slice(0, -2));
-  if (w.endsWith('s')) add(w.slice(0, -1));
+  // после -s/-es основа может быть короткой: goes → go, does → do
+  const add2 = x => { if (x && x.length >= 2 && x !== w && !out.includes(x)) out.push(x); };
+  if (w.endsWith('es')) add2(w.slice(0, -2));
+  if (w.endsWith('s') && !w.endsWith('ss')) add2(w.slice(0, -1));
   if (w.endsWith('ied')) add(w.slice(0, -3) + 'y');
   if (w.endsWith('ed')) { add(w.slice(0, -2)); add(w.slice(0, -1)); if (/(.)\1ed$/.test(w)) add(w.slice(0, -3)); }
   if (w.endsWith('ing')) { add(w.slice(0, -3)); add(w.slice(0, -3) + 'e'); if (/(.)\1ing$/.test(w)) add(w.slice(0, -4)); }
+  if (w.endsWith('ier')) add(w.slice(0, -3) + 'y');
+  if (w.endsWith('iest')) add(w.slice(0, -4) + 'y');
   if (w.endsWith('er')) { add(w.slice(0, -2)); add(w.slice(0, -1)); if (/(.)\1er$/.test(w)) add(w.slice(0, -3)); }
   if (w.endsWith('est')) { add(w.slice(0, -3)); add(w.slice(0, -2)); if (/(.)\1est$/.test(w)) add(w.slice(0, -4)); }
   if (w.endsWith('ly')) add(w.slice(0, -2));
-  if (w.endsWith('ier')) add(w.slice(0, -3) + 'y');
-  if (w.endsWith('iest')) add(w.slice(0, -4) + 'y');
   return out;
 };
 // служебные и самые частые слова, которых нет среди карточек
 const COMMON = { en: {
   a: 'неопределённый артикль («один, какой-то»)', an: 'неопределённый артикль (перед гласным звуком)', the: 'определённый артикль («этот, тот самый»)',
   is: 'есть, является (be: he/she/it is)', am: 'есть (be: I am)', are: 'есть (be: you/we/they are)', was: 'был, была (be)', were: 'были (be)', been: 'был (be, 3-я форма)', being: 'будучи (be)',
-  has: 'имеет, есть (have: he/she/it has)', had: 'имел; had + 3-я форма — давнее прошедшее', does: 'вспомогательный глагол (he/she/it)', did: 'сделал; вспомогательный глагол прошедшего',
+  has: 'имеет, есть (have: he/she/it has)', had: 'имел; had + 3-я форма — давнее прошедшее', does: 'делает; вспомогательный глагол (he/she/it)', did: 'сделал; вспомогательный глагол прошедшего',
   "don't": 'не (= do not)', "doesn't": 'не (= does not)', "didn't": 'не (= did not)', "isn't": 'не является (= is not)', "aren't": 'не (= are not)', "wasn't": 'не был (= was not)', "weren't": 'не были (= were not)',
   "haven't": 'не (= have not)', "hasn't": 'не (= has not)', "won't": 'не будет (= will not)', "can't": 'не может (= cannot)', cannot: 'не может', "couldn't": 'не мог (= could not)',
   "it's": 'это (= it is)', "i'm": 'я (= I am)', "you're": 'ты, вы (= you are)', "he's": 'он (= he is / he has)', "she's": 'она (= she is / she has)', "we're": 'мы (= we are)', "they're": 'они (= they are)',
   "there's": 'есть, имеется (= there is)', "what's": 'что (= what is)', "i'll": 'я (+ будущее, = I will)', "i've": 'я (= I have)', "let's": 'давай(те)', "that's": 'это (= that is)',
   can: 'мочь, уметь', could: 'мог, могла; мог бы', will: 'вспомогательный глагол будущего времени', would: 'бы; would like — хотел бы', should: 'следует, стоит', must: 'должен', may: 'может, можно',
-  not: 'не', this: 'этот, это', that: 'тот, это; что (союз)', these: 'эти', those: 'те', there: 'там; there is — есть', up: 'вверх', down: 'вниз', out: 'наружу, вне', off: 'прочь, с (чего-то)', over: 'над; через; закончился',
+  not: 'не', this: 'этот, это', that: 'тот, это; что, который', these: 'эти', those: 'те', there: 'там; there is — есть', up: 'вверх', down: 'вниз', out: 'наружу, вне', off: 'прочь, с (чего-то)', over: 'над; через; закончился',
   into: 'в (внутрь)', away: 'прочь', by: 'на (транспорте); у, около; к (сроку)', next: 'следующий', last: 'последний; прошлый', later: 'позже', soon: 'скоро', ago: 'тому назад', more: 'больше, ещё', less: 'меньше',
   few: 'мало (a few — несколько)', little: 'маленький; немного (a little)', lot: 'a lot (of) — много', thing: 'вещь', things: 'вещи', name: 'имя, название', story: 'история, рассказ', phone: 'телефон',
   problem: 'проблема', problems: 'проблемы', clothes: 'одежда', hi: 'привет', hey: 'эй, привет', thank: 'благодарить (thank you — спасибо)', excuse: 'извинять (excuse me — извините)', end: 'конец',
   top: 'верх, вершина', rest: 'отдых; остаток', moment: 'момент', piece: 'кусок, часть', sound: 'звучать; звук', simple: 'простой', social: 'социальный', media: 'медиа, СМИ', move: 'двигать(ся)',
   bright: 'яркий', large: 'большой', dead: 'мёртвый', nobody: 'никто', swallow: 'ласточка; глотать', front: 'передняя часть (in front of — перед)', forty: 'сорок', eighty: 'восемьдесят', grow: 'расти',
-  grew: 'вырос, стал (grow — grew — grown)', london: 'Лондон', anna: 'Анна', tom: 'Том', 'café': 'кафе',
+  grew: 'вырос, стал (grow — grew — grown)', london: 'Лондон', anna: 'Анна', tom: 'Том', 'café': 'кафе', best: 'лучший; лучше всего', news: 'новость, новости', used: 'использовал; used to — раньше (делал)',
   so: 'так; поэтому', very: 'очень', just: 'только что; просто', yes: 'да', no: 'нет', oh: 'о!', one: 'один; одна', ok: 'ладно, хорошо', mr: 'мистер', mrs: 'миссис', dr: 'доктор'
 }};
-// ищем перевод: словарь текста → карточки (и их формы) → фразы из нескольких слов в этом предложении → служебные слова
-W.lookup = (raw, lang, text, sentence) => {
-  const w = raw.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');
+const tokWord = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');
+// порядок: словарь текста → служебные слова и сокращения → фраза, в которой стоит именно это слово → карточка и её формы → основы → служебные по основе
+W.lookup = (raw, lang, text, sentence, idx) => {
+  const w = tokWord(raw);
   if (!w) return null;
-  const gl = (text && text.gl) || {};
+  const gl = (text && text.gl) || {}, cm = COMMON[lang] || {};
   const D = buildDict(lang);
-  const all = stems(w);
-  for (const s of all) {
-    if (gl[s]) return { w: s, t: gl[s], from: 'gl' };
-    if (D.words.has(s)) return { w: D.words.get(s).w, t: D.words.get(s).t, card: D.words.get(s) };
-    if (D.forms.has(s)) return { w: D.forms.get(s).w, t: D.forms.get(s).t, card: D.forms.get(s), form: w };
-  }
+  if (gl[w]) return { w, t: gl[w], from: 'gl' };
+  if (cm[w] && (w.length <= 3 || w.includes("'"))) return { w, t: cm[w], from: 'common' };
   if (sentence) {
-    const low = ' ' + sentence.toLowerCase().replace(/[’‘]/g, "'").replace(/[^a-zà-ÿ' ]+/g, ' ').replace(/\s+/g, ' ') + ' ';
-    for (const [k, c] of D.words) if (k.includes(' ') && k.split(' ').some(p => all.includes(p)) && low.includes(' ' + k + ' ')) return { w: c.w, t: c.t, card: c, phrase: true };
+    const toks = sentence.split(/\s+/).map(x => tokWord(x.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, ''))).filter(Boolean);
+    const at = idx != null ? idx : toks.indexOf(w);
+    let best = null;
+    for (const p of D.phrases) for (let s = Math.max(0, at - p.parts.length + 1); s <= at; s++) {
+      if (p.parts.every((x, k) => toks[s + k] === x) && (!best || p.parts.length > best.parts.length)) best = p;
+    }
+    if (best) return { w: best.c.w, t: best.c.t, card: best.c, phrase: true };
   }
-  const cm = COMMON[lang] || {};
-  for (const s of all) if (cm[s]) return { w: s, t: cm[s], from: 'common' };
+  if (D.words.has(w)) return { w: D.words.get(w).w, t: D.words.get(w).t, card: D.words.get(w) };
+  if (D.forms.has(w)) return { w: D.forms.get(w).w, t: D.forms.get(w).t, card: D.forms.get(w), form: w };
+  if (cm[w]) return { w, t: cm[w], from: 'common' };
+  for (const s of stems(w)) {
+    if (gl[s]) return { w: s, t: gl[s], from: 'gl' };
+    if (D.words.has(s)) return { w: D.words.get(s).w, t: D.words.get(s).t, card: D.words.get(s), form: w };
+    if (D.forms.has(s)) return { w: D.forms.get(s).w, t: D.forms.get(s).t, card: D.forms.get(s), form: w };
+    if (cm[s]) return { w: s, t: cm[s], from: 'common' };
+  }
+  // слово через дефис: пробуем части
+  if (w.includes('-')) { const parts = w.split('-').map(p => W.lookup(p, lang, text)).filter(Boolean); if (parts.length) return { w, t: parts.map(p => p.t.split(/[;,]/)[0]).join(' + '), from: 'parts' }; }
   return null;
 };
 W.resetDict = () => { for (const k in dict) delete dict[k]; };
@@ -106,46 +123,48 @@ W.renderReading = root => {
   let last = null;
   list.forEach((t, i) => {
     if (t.level !== last) { last = t.level; const inL = list.filter(x => x.level === t.level);
-      kids.push(h('div', { class: 'lvl-head' }, W.levelInfo[t.level], h('span', { class: 'muted' }, ' · прочитано ' + inL.filter(x => read[x.id]).length + ' из ' + inL.length))); }
-    const r = read[t.id], n = words(t);
+      kids.push(h('div', { class: 'lvl-head' }, W.levelInfo[t.level], h('span', { class: 'muted' }, ' · прочитано ' + inL.filter(x => W.textRead(x.id)).length + ' из ' + inL.length))); }
+    const r = read[t.id], n = words(t), ok = W.textRead(t.id);
     kids.push(h('button', { class: 'lesson', onclick: () => openText(t) },
-      h('span', { class: 'l-num' + (r ? ' done' : '') }, r ? '✓' : i + 1),
+      h('span', { class: 'l-num' + (ok ? ' done' : '') }, ok ? '✓' : i + 1),
       h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, t.title),
         h('span', { class: 'muted small' }, t.src + ' · ' + n + ' слов · ~' + Math.max(1, Math.round(n / 90)) + ' мин' + (r ? ' · вопросы ' + r.best + '%' : '')))));
   });
   W.put(root,
     h('header', { class: 'head' }, h('div', { class: 'kicker' }, 'тексты по уровням'), h('h1', null, 'Чтение'), W.langSwitch()),
-    h('p', { class: 'muted' }, 'Нажмите на любое слово — появится перевод. Неизвестные слова можно сразу добавить в свою колоду.'),
+    h('p', { class: 'muted' }, 'Нажмите на любое слово — появится перевод. Неизвестные слова можно сразу добавить в свою колоду. Текст засчитывается, когда на вопросы отвечено хотя бы на 70%.'),
     list.length ? h('div', { class: 'lessons' }, kids) : h('p', { class: 'muted empty' }, 'Тексты для этого языка готовятся.'));
 };
 
 // ---------- экран текста ----------
+const WORD = /^[A-Za-zÀ-ÿ']+(?:-[A-Za-zÀ-ÿ']+)*$/;
 const tokenize = s => s.split(/(\s+)/).flatMap(part => /\s/.test(part) ? [part] : part.split(/(^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$)/).filter(Boolean));
 let playing = null;
-const stopPlay = () => { if (playing) { playing.stop = true; playing = null; } if (W.stopSpeak) W.stopSpeak(); };
 
 function openText(t) {
   const lang = W.S.lang;
+  W.resetDict(); // словарь мог измениться: свои колоды, вход в аккаунт, «скрыть грубые»
+  // докачиваем звук предложений, чтобы текст звучал и без интернета
+  if (W.prefetchUrls && lang === 'en') setTimeout(() => W.prefetchUrls(t.p.flat().map(s => W.audioUrl(s[0], lang))), 800);
   W.push(el => {
     let showTr = false;
-    const sentences = [];
+    const sentences = t.p.flat();
     const body = h('article', { class: 'reader' });
     const renderBody = () => {
+      let si = 0;
       W.put(body, t.p.map(par => h('div', { class: 'par' },
         h('p', null, par.map(([en, ru]) => {
-          const idx = sentences.length; sentences.push([en, ru]);
-          return h('span', { class: 'sent', 'data-i': idx }, tokenize(en).map(tok => /^[A-Za-zÀ-ÿ']+$/.test(tok)
-            ? h('span', { class: 'w', onclick: e => { e.stopPropagation(); tapWord(tok, en, ru); } }, tok)
-            : tok), ' ');
+          let wi = 0;
+          return h('span', { class: 'sent', 'data-i': si++ }, tokenize(en).map(tok => {
+            if (!WORD.test(tok)) return tok;
+            const my = wi++;
+            return h('span', { class: 'w', onclick: e => { e.stopPropagation(); tapWord(tok, en, ru, my); } }, tok);
+          }), ' ');
         })),
         showTr ? h('p', { class: 'par-tr' }, par.map(s => s[1]).join(' ')) : null)));
-      sentences.length = 0;
-      // повторная разметка, чтобы индексы предложений шли по порядку
-      let i = 0; body.querySelectorAll('.sent').forEach(s => { s.dataset.i = i++; });
-      t.p.flat().forEach(s => sentences.push(s));
     };
-    const tapWord = (tok, en, ru) => {
-      const hit = W.lookup(tok, lang, t, en);
+    const tapWord = (tok, en, ru, idx) => {
+      const hit = W.lookup(tok, lang, t, en, idx);
       W.modal(tok, h('div', null,
         hit ? h('div', { class: 'gloss' },
           h('div', { class: 'gloss-w' }, h('b', null, hit.w), W.soundBtn(hit.w, lang), hit.form && hit.form !== hit.w.toLowerCase() ? h('span', { class: 'muted small' }, ' (форма: ' + hit.form + ')') : null),
@@ -155,18 +174,18 @@ function openText(t) {
         h('div', { class: 'gloss-s' }, h('div', { class: 'kicker' }, 'предложение'), h('p', null, en, W.soundBtn(en, lang)), h('p', { class: 'muted' }, ru))),
         hit ? [{ label: 'В мою колоду', cls: 'primary', fn: () => addWord(hit, en, ru, lang) }] : []);
     };
+    const stop = () => { if (playing) { playing.stop = true; playing = null; } W.stopSpeak(); W.put(playBtn, 'Слушать текст'); body.querySelectorAll('.sent.now').forEach(x => x.classList.remove('now')); };
     const play = async () => {
-      if (playing) { stopPlay(); W.put(playBtn, 'Слушать текст'); return; }
+      if (playing) return stop();
       const me = playing = { stop: false };
       W.put(playBtn, 'Остановить');
       for (let i = 0; i < sentences.length && !me.stop; i++) {
         const node = body.querySelector('.sent[data-i="' + i + '"]');
         body.querySelectorAll('.sent.now').forEach(x => x.classList.remove('now'));
         if (node) { node.classList.add('now'); node.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-        await W.speakWait(sentences[i][0], lang);
+        await W.speakWait(sentences[i][0], lang, true);
       }
-      body.querySelectorAll('.sent.now').forEach(x => x.classList.remove('now'));
-      if (playing === me) { playing = null; W.put(playBtn, 'Слушать текст'); }
+      if (playing === me) stop();
     };
     const playBtn = h('button', { class: 'btn', onclick: play }, 'Слушать текст');
     const trBtn = h('button', { class: 'btn', onclick: () => { showTr = !showTr; W.put(trBtn, showTr ? 'Скрыть перевод' : 'Перевод'); renderBody(); } }, 'Перевод');
@@ -176,11 +195,13 @@ function openText(t) {
       h('h2', null, t.title),
       h('div', { class: 'row-btns' }, playBtn, trBtn),
       body,
-      t.q && t.q.length ? h('button', { class: 'btn primary wide', onclick: () => { stopPlay(); quiz(el, t); } }, 'Вопросы к тексту · ' + t.q.length) : null);
+      t.q && t.q.length ? h('button', { class: 'btn primary wide', onclick: () => { stop(); quiz(el, t); } }, 'Вопросы к тексту · ' + t.q.length) : null);
+    // чтение вслух останавливаем, только когда ушли с экрана текста (окно слова поверх — не повод)
+    const onPop = () => { if (!el.isConnected) { stop(); window.removeEventListener('popstate', onPop); } };
+    window.addEventListener('popstate', onPop);
     return () => {};
   });
 }
-window.addEventListener('popstate', stopPlay);
 
 function quiz(el, t) {
   let i = 0, right = 0;
@@ -192,10 +213,13 @@ function quiz(el, t) {
       const pct = Math.round(right / t.q.length * 100), prev = (W.S.read || {})[t.id];
       W.S.read = W.S.read || {};
       W.S.read[t.id] = { n: (prev ? prev.n : 0) + 1, best: Math.max(pct, prev ? prev.best : 0), ts: Date.now() };
+      if (W.markDay) W.markDay();
       W.save();
       return W.put(body, h('div', { class: 'summary' }, h('div', { class: 'big' }, right + ' из ' + t.q.length),
-        h('p', null, pct >= 70 ? 'Текст прочитан! ✓' : 'Текст отмечен как прочитанный. Можно перечитать и ответить ещё раз.'),
-        h('div', { class: 'col-btns' }, h('button', { class: 'btn primary', onclick: W.back }, 'К текстам'))));
+        h('p', null, pct >= W.READ_PASS ? 'Текст прочитан! ✓' : 'Чтобы текст засчитался, нужно ответить хотя бы на 70%. Перечитайте и попробуйте ещё раз.'),
+        h('div', { class: 'col-btns' },
+          pct < W.READ_PASS ? h('button', { class: 'btn', onclick: () => { i = 0; right = 0; ask(); } }, 'Ответить ещё раз') : null,
+          h('button', { class: 'btn primary', onclick: W.back }, 'К текстам'))));
     }
     const q = t.q[i], why = h('div', { class: 'result' });
     const order = W.shuffle(q.o.map((o, k) => k));

@@ -228,7 +228,7 @@ addDecks('en', 'en-a1', 'Базовый английский · A1', [
   ["juice", "сок", "A glass of orange juice, please.", "Стакан апельсинового сока, пожалуйста."],
   ["beer", "пиво", "He drinks a beer after work.", "Он пьёт пиво после работы."],
   ["wine", "вино", "We have a glass of red wine.", "Мы пьём бокал красного вина."],
-  ["drink", "напиток; пить", "What would you like to drink?", "Что бы вы хотели выпить?", "", "И существительное, и глагол."]
+  ["drink", "напиток; пить", "What would you like to drink?", "Что бы вы хотели выпить?", "", "Drink — drank — drunk. И существительное, и глагол."]
 ]},
 
 { id: 'a1-home', emoji: '🏠', title: 'Дом и комнаты', level: 'A1', reg: 'n', cards: [

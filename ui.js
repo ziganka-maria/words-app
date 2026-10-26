@@ -61,26 +61,41 @@ const sysSpeak = (text, lang, done) => {
   speechSynthesis.cancel();
   speechSynthesis.speak(u);
 };
-let player = null;
-W.stopSpeak = () => { if (player) { player.pause(); player = null; } if (W.canSpeak()) speechSynthesis.cancel(); };
-// прочитать фразу и дождаться конца: запись нейросетевого голоса, а если её нет — голос телефона
+// один проигрыватель на всё приложение: Safari разрешает звук элементу, который уже играл по касанию
+const player = new Audio();
+let pending = null; // как завершить текущую фразу (чтобы «Стоп» не оставлял ожидание висеть)
+W.stopSpeak = () => {
+  player.onended = player.onerror = null;
+  try { player.pause(); } catch (e) {}
+  if (W.canSpeak()) speechSynthesis.cancel();
+  if (pending) { const p = pending; pending = null; p(); }
+};
+// прочитать фразу и дождаться конца: запись нейросетевого голоса, а если её нет или звук не разрешён — голос телефона
 W.speakWait = (text, lang) => new Promise(res => {
   const t = W.speechText(text);
   if (!W.S.set.sound || !t) return res();
   W.stopSpeak();
   let finished = false;
-  const done = () => { if (!finished) { finished = true; clearTimeout(guard); res(); } };
+  const done = () => { if (!finished) { finished = true; clearTimeout(guard); if (pending === done) pending = null; res(); } };
+  pending = done;
   const guard = setTimeout(done, 20000); // на всякий случай: ни одна фраза не должна «повесить» чтение
   const url = W.audioUrl(t, lang);
   if (!url) return sysSpeak(t, lang, done);
-  const a = new Audio(url);
   let fell = false;
-  const fallback = () => { if (!fell && player === a) { fell = true; sysSpeak(t, lang, done); } };
-  player = a;
-  a.onended = done;
-  a.onerror = fallback;
-  a.play().catch(e => { if (e.name === 'NotAllowedError') done(); else fallback(); });
+  const fallback = () => { if (!fell && !finished) { fell = true; sysSpeak(t, lang, done); } };
+  player.onended = done;
+  player.onerror = fallback;
+  player.src = url;
+  player.play().catch(() => fallback());
 });
+// докачать записи в кэш (для текстов и колод)
+W.prefetchUrls = urls => {
+  if (!navigator.onLine || !('caches' in window)) return;
+  const list = [...new Set(urls.filter(Boolean))];
+  let i = 0;
+  const next = () => { if (i < list.length) fetch(list[i++]).catch(() => {}).finally(next); };
+  for (let k = 0; k < 4; k++) next();
+};
 W.speak = (text, lang) => { W.speakWait(text, lang); };
 // докачиваем звук колоды в фоне, чтобы он был и без интернета
 W.prefetchAudio = cards => {
@@ -161,7 +176,7 @@ window.addEventListener('popstate', () => {
   pendingBack = false;
   let closed = false;
   while (stack.length > want) { stack.pop().el.remove(); closed = true; }
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (W.stopSpeak) W.stopSpeak();
   if (!st.m) { modalEntry = false; hideModal(); }
   if (closed) {
     const top = stack[stack.length - 1];

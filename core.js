@@ -14,7 +14,7 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, act: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
   set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us', goal: 20 }
 });
@@ -26,7 +26,7 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'act'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
@@ -101,7 +101,11 @@ W.merge = (a, b) => {
   r.stamps = Object.assign({}, a.stamps);
   for (const k in b.stamps) r.stamps[k] = r.stamps[k] ? Math.min(r.stamps[k], b.stamps[k]) : b.stamps[k];
   // тексты и тренажёры: лучший результат и большее число прохождений
-  const best = (x, y) => !x ? y : !y ? x : Object.assign({}, x, y, { n: Math.max(x.n || 0, y.n || 0), best: Math.max(x.best || 0, y.best || 0), ts: Math.max(x.ts || 0, y.ts || 0) });
+  const best = (x, y) => !x ? y : !y ? x : Object.assign({}, x, y, { n: Math.max(x.n || 0, y.n || 0), best: Math.max(x.best || 0, y.best || 0), ts: Math.max(x.ts || 0, y.ts || 0), days: Object.assign({}, x.days, y.days) });
+  // ошибки в уроках и дни занятий — объединяем
+  r.gmist = Object.assign({}, a.gmist);
+  for (const k in b.gmist) r.gmist[k] = [...new Set([...(r.gmist[k] || []), ...b.gmist[k]])];
+  r.act = Object.assign({}, a.act, b.act);
   r.read = {}; for (const k of new Set([...Object.keys(a.read), ...Object.keys(b.read)])) r.read[k] = best(a.read[k], b.read[k]);
   r.drill = {}; for (const k of new Set([...Object.keys(a.drill), ...Object.keys(b.drill)])) r.drill[k] = best(a.drill[k], b.drill[k]);
   r.fav = {};
@@ -254,10 +258,13 @@ W.counts = cards => {
   return r;
 };
 
+// день считается днём занятий, если были повторения, чтение, урок или тренажёр
+W.active = k => !!(W.S.days[k] || (W.S.act || {})[k]);
+W.markDay = () => { W.S.act = W.S.act || {}; W.S.act[W.dayKey()] = 1; };
 W.streak = () => {
   const d = new Date(); let n = 0;
-  if (!W.S.days[W.dayKey(d)]) d.setDate(d.getDate() - 1);
-  while (W.S.days[W.dayKey(d)]) { n++; d.setDate(d.getDate() - 1); }
+  if (!W.active(W.dayKey(d))) d.setDate(d.getDate() - 1);
+  while (W.active(W.dayKey(d))) { n++; d.setDate(d.getDate() - 1); }
   return n;
 };
 

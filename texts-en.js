@@ -19,7 +19,7 @@ TEXTS.en = [
   [["The bedroom is small.", "Спальня маленькая."], ["There is a bed, a lamp and a picture of the sea on the wall.", "Там есть кровать, лампа и картина с морем на стене."]],
   [["The kitchen is Tom's favourite room.", "Кухня — любимая комната Тома."], ["He likes cooking, and his friends often come for dinner.", "Он любит готовить, и друзья часто приходят к нему на ужин."]],
   [["There is one problem: the flat is on the fifth floor and there is no lift!", "Есть одна проблема: квартира на шестом этаже, а лифта нет!"], ["But Tom says: «It's good exercise.»", "Но Том говорит: «Это хорошая зарядка»."]]
-], gl: { tom: 'Том', fifth: 'пятый', favourite: 'любимый', problem: 'проблема', says: 'говорит', likes: 'любит', cooking: 'готовка, готовить' }, q: [
+], gl: { tom: 'Том', favourite: 'любимый', fifth: 'пятый; fifth floor (брит.) — шестой этаж', problem: 'проблема', says: 'говорит', likes: 'любит', cooking: 'готовка, готовить' }, q: [
   { q: 'Сколько комнат в квартире Тома?', o: ['Одна', 'Две', 'Три'], a: 1 },
   { q: 'Какая комната любимая у Тома?', o: ['Спальня', 'Гостиная', 'Кухня'], a: 2 },
   { q: 'Какая в квартире проблема?', o: ['Нет лифта', 'Маленькое окно', 'Нет кухни'], a: 0 }
@@ -44,12 +44,12 @@ TEXTS.en = [
 
 { id: 'en-t-lion', level: 'A1', title: 'The Lion and the Mouse', src: 'По мотивам басни Эзопа', p: [
   [["A big lion is sleeping in the forest.", "В лесу спит большой лев."], ["A little mouse runs across his face.", "Маленькая мышка пробегает по его морде."], ["The lion wakes up. He is angry.", "Лев просыпается. Он сердит."]],
-  [["He catches the mouse in his big paw.", "Он ловит мышку своей большой лапой."], ["«Please, don't eat me!» says the mouse. «One day I can help you.»", "«Пожалуйста, не ешь меня! — говорит мышка. — Однажды я смогу тебе помочь»."]],
+  [["He catches the mouse in his big paw.", "Он ловит мышку своей большой лапой."], ["«Please, don't eat me!» says the mouse. «One day I will help you.»", "«Пожалуйста, не ешь меня! — говорит мышка. — Однажды я тебе помогу»."]],
   [["The lion laughs. «You are very small. How can you help me?»", "Лев смеётся: «Ты совсем маленькая. Как ты можешь мне помочь?»"], ["But he is kind, and he lets the mouse go.", "Но он добрый и отпускает мышку."]],
   [["A week later, hunters catch the lion in a net.", "Через неделю охотники ловят льва сетью."], ["He cannot move. He roars and roars.", "Он не может пошевелиться. Он рычит и рычит."]],
-  [["The little mouse hears him.", "Маленькая мышка слышит его."], ["She runs to the net and bites the ropes with her sharp teeth.", "Она бежит к сети и перегрызает верёвки острыми зубами."], ["Soon the lion is free!", "Скоро лев свободен!"]],
+  [["The little mouse hears him.", "Маленькая мышка слышит его."], ["She runs to the net and bites the ropes with her sharp teeth.", "Она бежит к сети и перегрызает верёвки острыми зубами."], ["Soon the lion is free!", "И вот лев уже на свободе!"]],
   [["«Thank you, my little friend,» says the lion.", "«Спасибо, мой маленький друг», — говорит лев."], ["Even a small friend can be a big help.", "Даже маленький друг может очень помочь."]]
-], gl: { paw: 'лапа', hunters: 'охотники', net: 'сеть', roars: 'рычит', ropes: 'верёвки', lets: 'позволяет; lets go — отпускает', later: 'позже; a week later — через неделю', soon: 'скоро', move: 'двигаться', cannot: 'не может', says: 'говорит', wakes: 'просыпается', runs: 'бежит' }, q: [
+], gl: { little: 'маленький', paw: 'лапа', hunters: 'охотники', net: 'сеть', roars: 'рычит', ropes: 'верёвки', lets: 'позволяет; lets go — отпускает', later: 'позже; a week later — через неделю', soon: 'скоро', move: 'двигаться', cannot: 'не может', says: 'говорит', wakes: 'просыпается', runs: 'бежит' }, q: [
   { q: 'Почему лев рассердился?', o: ['Мышка его разбудила', 'Он был голоден', 'Пошёл дождь'], a: 0 },
   { q: 'Кто поймал льва?', o: ['Мышка', 'Охотники', 'Другой лев'], a: 1 },
   { q: 'Как мышка помогла льву?', o: ['Позвала друзей', 'Перегрызла верёвки', 'Принесла еду'], a: 1 },
@@ -61,7 +61,7 @@ TEXTS.en = [
   [["The city is beautiful, but the weather is cold and windy.", "Город красивый, но погода холодная и ветреная."], ["Today we visited the castle and a big museum.", "Сегодня мы были в замке и в большом музее."], ["Tomorrow we're going to the mountains.", "Завтра мы едем в горы."]],
   [["The food here is good. I love fish and chips!", "Еда здесь хорошая. Обожаю рыбу с картошкой!"], ["I'm back on Sunday.", "Я вернусь в воскресенье."], ["Are you free on Monday evening? Let's have dinner together.", "Ты свободна в понедельник вечером? Давай поужинаем вместе."]],
   [["See you soon,", "До скорой встречи,"], ["Tom", "Том"], ["PS: I have a little present for you!", "P.S. У меня для тебя маленький подарок!"]]
-], gl: { edinburgh: 'Эдинбург (город в Шотландии)', visited: 'посетили', chips: 'картофель фри', back: 'обратно; I\'m back — я вернусь', "let's": 'давай(те)', soon: 'скоро', ps: 'P.S., постскриптум', "we're": 'мы (= we are)', "i'm": 'я (= I am)', going: 'going to — собираться; едем' }, q: [
+], gl: { little: 'маленький', edinburgh: 'Эдинбург (город в Шотландии)', visited: 'посетили', chips: 'картофель фри', back: 'обратно; I\'m back — я вернусь', "let's": 'давай(те)', soon: 'скоро', ps: 'P.S., постскриптум', "we're": 'мы (= we are)', "i'm": 'я (= I am)', going: 'едем; we\'re going to the mountains — мы едем в горы' }, q: [
   { q: 'Где сейчас Том?', o: ['В Лондоне', 'В Эдинбурге', 'В Москве'], a: 1 },
   { q: 'Какая там погода?', o: ['Тёплая и солнечная', 'Холодная и ветреная', 'Идёт снег'], a: 1 },
   { q: 'Что Том предлагает Анне?', o: ['Поужинать в понедельник', 'Поехать в горы', 'Позвонить в субботу'], a: 0 }
@@ -78,7 +78,7 @@ TEXTS.en = [
 ], gl: { lost: 'потерянный; got lost — заблудилась', dead: 'мёртвый; battery was dead — батарея села', "couldn't": 'не могла (= could not)', busy: 'оживлённый', cross: 'переходить', thanked: 'поблагодарила', directions: 'указания, как пройти', amazing: 'потрясающий', hundreds: 'сотни', stalls: 'прилавки', paper: 'бумажный', case: 'случай; just in case — на всякий случай', got: 'got lost — заблудилась' }, q: [
   { q: 'Почему рассказчица не могла воспользоваться картой в телефоне?', o: ['Телефон украли', 'Батарея села', 'Не было интернета'], a: 1 },
   { q: 'Кто помог найти дорогу?', o: ['Полицейский', 'Пожилая женщина с собакой', 'Водитель такси'], a: 1 },
-  { q: 'Где находится рынок?', o: ['Рядом со станцией', 'Рядом с замком', 'За рекой, у парка'], a: 0 },
+  { q: 'Где находится рынок?', o: ['Рядом со станцией', 'Рядом с замком', 'Рядом с музеем'], a: 0 },
   { q: 'Что она делает с тех пор?', o: ['Не ездит в Лондон', 'Всегда носит бумажную карту', 'Покупает новый телефон'], a: 1 }
 ]},
 
@@ -90,7 +90,7 @@ TEXTS.en = [
   [["One night, he and his wife decided to hide and watch.", "Однажды ночью он и его жена решили спрятаться и посмотреть."], ["At midnight two little elves came in. They had no clothes, and they were shivering.", "В полночь вошли два маленьких эльфа. На них не было одежды, и они дрожали."], ["They sat down and worked quickly until the shoes were ready.", "Они сели и быстро работали, пока туфли не были готовы."]],
   [["«They have helped us so much,» said his wife. «Let's make them some clothes.»", "«Они так нам помогли, — сказала жена. — Давай сошьём им одежду»."], ["She made two little shirts and two pairs of trousers, and he made two tiny pairs of shoes.", "Она сшила две маленькие рубашки и две пары брюк, а он — две крошечные пары обуви."]],
   [["When the elves found the presents, they were so happy that they danced around the room.", "Когда эльфы нашли подарки, они так обрадовались, что пустились в пляс по комнате."], ["They never came back, but the shoemaker and his wife were happy for the rest of their lives.", "Они больше не вернулись, но сапожник с женой были счастливы до конца своих дней."]]
-], gl: { once: 'однажды; once upon a time — жили-были', shoemaker: 'сапожник', leather: 'кожа (материал)', believe: 'верить', midnight: 'полночь', elves: 'эльфы', shivering: 'дрожащий от холода', tiny: 'крошечный', rest: 'остаток; for the rest of their lives — до конца жизни', lives: 'жизни', danced: 'танцевали', "wasn't": 'не был (= was not)', more: 'больше; not any more — больше не', upon: 'на; once upon a time — жили-были', decided: 'решили', happened: 'случилось', "i'll": 'я (сделаю) (= I will)', next: 'следующий' }, q: [
+], gl: { once: 'однажды; once upon a time — жили-были', shoemaker: 'сапожник', leather: 'кожа (материал)', believe: 'верить', midnight: 'полночь', elves: 'эльфы', shivering: 'дрожали (от холода)', tiny: 'крошечный', rest: 'остаток; for the rest of their lives — до конца жизни', lives: 'жизни', danced: 'танцевали', "wasn't": 'не был (= was not)', more: 'больше; not any more — больше не', upon: 'на; once upon a time — жили-были', left: 'оставил; ушёл (leave — left — left)', decided: 'решили', happened: 'случилось', "i'll": 'я (сделаю) (= I will)', next: 'следующий' }, q: [
   { q: 'Почему сапожник был бедным в начале сказки?', o: ['Он был ленивым', 'У него было мало кожи и денег', 'Его обманули'], a: 1 },
   { q: 'Кто шил туфли по ночам?', o: ['Жена сапожника', 'Два эльфа', 'Сосед'], a: 1 },
   { q: 'Чем отблагодарили эльфов?', o: ['Деньгами', 'Едой', 'Одеждой и обувью'], a: 2 }
@@ -100,10 +100,10 @@ TEXTS.en = [
   [["Max had his first job interview on Monday.", "В понедельник у Макса было первое собеседование."], ["He was very nervous, so he prepared everything on Sunday.", "Он очень нервничал, поэтому подготовил всё в воскресенье."]],
   [["He read about the company on its website and practised answers to common questions.", "Он почитал о компании на её сайте и отрепетировал ответы на обычные вопросы."], ["He also ironed his best shirt and checked the journey: forty minutes by train.", "Ещё он погладил свою лучшую рубашку и проверил дорогу: сорок минут на поезде."]],
   [["On Monday morning the train was delayed.", "В понедельник утром поезд задержали."], ["Max was worried, but he arrived at the office five minutes early.", "Макс волновался, но приехал в офис на пять минут раньше."]],
-  [["The manager was friendly.", "Руководитель был приветливым."], ["She asked him about his experience, his skills and his plans for the future.", "Она спросила его об опыте, навыках и планах на будущее."], ["Max answered honestly. «I don't have much experience yet, but I learn quickly and I enjoy working in a team.»", "Макс отвечал честно: «У меня пока мало опыта, но я быстро учусь и люблю работать в команде»."]],
+  [["The manager was friendly.", "Руководитель оказалась приветливой."], ["She asked him about his experience, his skills and his plans for the future.", "Она спросила его об опыте, навыках и планах на будущее."], ["Max answered honestly. «I don't have much experience yet, but I learn quickly and I enjoy working in a team.»", "Макс отвечал честно: «У меня пока мало опыта, но я быстро учусь и люблю работать в команде»."]],
   [["At the end she asked: «Do you have any questions for us?»", "В конце она спросила: «У вас есть к нам вопросы?»"], ["Max asked about training and about the team.", "Макс спросил про обучение и про команду."], ["The manager smiled. «Good questions.»", "Руководитель улыбнулась: «Хорошие вопросы»."]],
   [["Two days later, Max received an email.", "Через два дня Макс получил письмо."], ["He opened it slowly… and then he shouted: «I've got the job!»", "Он медленно открыл его… а потом закричал: «Меня взяли!»"]]
-], gl: { max: 'Макс', practised: 'репетировал', common: 'обычный, частый', ironed: 'погладил', delayed: 'задержан', early: 'рано', future: 'будущее', honestly: 'честно', "i've": 'я (= I have)', "i've got the job": 'меня взяли на работу', end: 'конец', everything: 'всё', its: 'его, её (о предмете)', prepared: 'подготовил' }, q: [
+], gl: { max: 'Макс', practised: 'репетировал', common: 'обычный, частый', ironed: 'погладил', delayed: 'задержан', future: 'будущее', honestly: 'честно', "i've": 'я (= I have)', "i've got the job": 'меня взяли на работу', end: 'конец', everything: 'всё', its: 'его, её (о предмете)', prepared: 'подготовил', checked: 'проверил', early: 'рано; five minutes early — на пять минут раньше' }, q: [
   { q: 'Что Макс сделал в воскресенье?', o: ['Отдыхал', 'Подготовился к собеседованию', 'Поехал в офис'], a: 1 },
   { q: 'Что случилось утром в понедельник?', o: ['Он проспал', 'Поезд задержали', 'Пошёл дождь'], a: 1 },
   { q: 'Чем закончилась история?', o: ['Макса взяли на работу', 'Макс отказался', 'Письмо не пришло'], a: 0 }
@@ -122,7 +122,7 @@ TEXTS.en = [
   { q: 'Главная мысль басни:', o: ['Лжецу не верят, даже когда он говорит правду', 'Волки опасны', 'Работа пастуха скучная'], a: 0 }
 ]},
 
-{ id: 'en-t-chat', level: 'A2', title: 'Group Chat: Friday Plans', src: 'Переписка · живой английский', p: [
+{ id: 'en-t-chat', level: 'A2', title: 'Group Chat: Friday Plans', src: 'Переписка · живой язык, сленг', p: [
   [["Jess: hey guys, what's up? Anyone free on Friday?", "Джесс: привет всем, как дела? Кто-нибудь свободен в пятницу?"]],
   [["Leo: I'm down! What's the plan?", "Лео: Я за! Какой план?"]],
   [["Jess: There's a new burger place near the station. The reviews are awesome, no cap.", "Джесс: У вокзала открылась новая бургерная. Отзывы огонь, честно."]],
@@ -134,7 +134,7 @@ TEXTS.en = [
   [["Jess: my bad, I forgot to tell you: his phone was broken. He's legit this time.", "Джесс: мой косяк, забыла сказать: у него сломался телефон. В этот раз всё по-честному."]],
   [["Mia: fine. But if the burgers are mid, I'm blaming you, Jess 😂", "Мия: ладно. Но если бургеры окажутся так себе, виновата будешь ты, Джесс 😂"]],
   [["Jess: deal. See you Friday!", "Джесс: договорились. До пятницы!"]]
-], gl: { guys: 'ребята', anyone: 'кто-нибудь', jess: 'Джесс', leo: 'Лео', mia: 'Мия', sam: 'Сэм', burger: 'бургер', burgers: 'бургеры', place: 'место, заведение', reviews: 'отзывы', show: 'шоу, сериал', "i'm": 'я (= I am)', 'in': 'в; I\'m in — я с вами', blaming: 'винить', deal: 'сделка; deal! — договорились!', "there's": 'есть, имеется (= there is)', "he's": 'он (= he is)', ok: 'окей, ладно', lol: 'ха-ха, ору', come: 'приходить; come on — да ладно', broken: 'сломанный', forgot: 'забыла' }, q: [
+], gl: { guys: 'ребята', anyone: 'кто-нибудь', jess: 'Джесс', leo: 'Лео', mia: 'Мия', sam: 'Сэм', burger: 'бургер', burgers: 'бургеры', place: 'место, заведение', reviews: 'отзывы', show: 'шоу, сериал', "i'm": 'я (= I am)', 'in': 'в; I\'m in — я с вами', blaming: 'винить; I\'m blaming you — буду винить тебя', deal: 'сделка; deal! — договорились!', "there's": 'есть, имеется (= there is)', "he's": 'он (= he is)', ok: 'окей, ладно', lol: 'ха-ха, ору', come: 'приходить; come on — да ладно', broken: 'сломанный', forgot: 'забыла' }, q: [
   { q: 'Куда друзья идут в пятницу?', o: ['В кино', 'В новую бургерную', 'На концерт'], a: 1 },
   { q: 'Что значит «I\'m down» в ответе Лео?', o: ['Мне грустно', 'Я за', 'Я внизу'], a: 1 },
   { q: 'Почему в прошлый раз Сэм «пропал»?', o: ['Он обиделся', 'У него сломался телефон', 'Он заболел'], a: 1 },

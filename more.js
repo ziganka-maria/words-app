@@ -67,6 +67,7 @@ function quiz(el, l, num) {
     if (i >= l.quiz.length) {
       const pct = Math.round(right / l.quiz.length * 100), prev = W.S.gram[l.id];
       W.S.gram[l.id] = { done: (prev && prev.done) || pct >= 70, best: Math.max(pct, prev ? prev.best : 0) };
+      if (W.markDay) W.markDay();
       W.save();
       return W.put(body, h('div', { class: 'summary' },
         h('div', { class: 'big' }, `${right} из ${l.quiz.length}`),
@@ -170,10 +171,11 @@ W.renderMore = root => {
         h('b', null, 'iPhone'), ' — проверьте, что выключен беззвучный режим (переключатель сбоку), и посмотрите Настройки → Универсальный доступ → Устное содержание → Голоса.'),
       h('div', { class: 'row-btns' },
         h('button', { class: 'btn', onclick: () => W.speak('Hello! How are you?', 'en') }, 'Проверить EN'),
-        h('button', { class: 'btn', onclick: () => W.speak('Hallo! Wie geht\'s?', 'de') }, 'Проверить DE'))),
+        h('button', { class: 'btn', onclick: () => W.speak('Hallo! Wie geht\'s?', 'de') }, 'Проверить DE')),
+      W.audioPanel ? W.audioPanel() : null),
     h('section', { class: 'panel' }, h('h3', null, 'Сброс'),
       h('button', { class: 'btn danger', onclick: () => W.confirm('Весь прогресс по словам и урокам обнулится. Ваши колоды останутся.', 'Сбросить', () => {
-        S.prog = {}; S.days = {}; S.gram = {}; S.newToday = { d: 0 }; W.save(); W.toast('Прогресс сброшен'); W.renderTab();
+        S.prog = {}; S.days = {}; S.gram = {}; S.read = {}; S.drill = {}; S.gmist = {}; S.stamps = {}; S.act = {}; S.newToday = { d: 0 }; W.save(); W.toast('Прогресс сброшен'); W.renderTab();
       }) }, 'Сбросить прогресс')),
     h('p', { class: 'muted small center' }, 'Живые слова · версия ' + W.VERSION));
 };

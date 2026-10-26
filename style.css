@@ -347,3 +347,6 @@ textarea { resize: vertical; border: 1px solid var(--rule); }
 .dict-line .miss { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 3px; }
 .rate .btn.r-good { background: var(--good-soft) !important; color: var(--good) !important; border-color: var(--good) !important; }
 .lvl-head .small { font-size: inherit; }
+
+.audio-dl { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.audio-dl p { margin: 0; }

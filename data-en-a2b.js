@@ -64,7 +64,7 @@ addDecks('en', 'en-a2', 'Базовый английский · A2', [
   ["make-up", "макияж", "She wears a lot of make-up.", "Она сильно красится.", "", "", "makeup|make up"],
   ["perfume", "духи", "She wears perfume.", "Она пользуется духами."],
   ["jewellery", "украшения", "She has beautiful jewellery.", "У неё красивые украшения.", "", "В США jewelry.", "jewelry"],
-  ["ring", "кольцо; звонить", "She wears a gold ring.", "Она носит золотое кольцо."],
+  ["ring", "кольцо; звонить", "She wears a gold ring.", "Она носит золотое кольцо.", "", "Ring — rang — rung (о звонке)."],
   ["necklace", "ожерелье", "He gives her a necklace.", "Он дарит ей ожерелье."],
   ["earring", "серьга", "She lost an earring.", "Она потеряла серьгу."],
   ["tie", "галстук; завязывать", "He wears a blue tie.", "Он носит синий галстук."],
