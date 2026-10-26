@@ -350,3 +350,10 @@ textarea { resize: vertical; border: 1px solid var(--rule); }
 
 .audio-dl { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
 .audio-dl p { margin: 0; }
+
+/* неправильные глаголы: карточка с тремя формами */
+.irr-forms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin: 14px 0 6px; }
+.irr-form { border: 1px solid var(--line, currentColor); padding: 10px 6px; text-align: center; display: flex; flex-direction: column; gap: 4px; }
+.irr-form b { font-size: 1.15em; word-break: break-word; }
+.irr-card { touch-action: pan-y; user-select: none; }
+.irr-chunks { flex-wrap: wrap; overflow: visible; }

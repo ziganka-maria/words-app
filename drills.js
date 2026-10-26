@@ -55,7 +55,7 @@ W.drillsBlock = lang => {
       h('span', { class: 'muted small' }, sub + (done[id] ? ' · лучший результат ' + done[id].best + '%' : '')))) : null;
   return h('section', { id: 'drills-' + lang },
     h('div', { class: 'lvl-head' }, 'Тренажёры'),
-    row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · напишите две формы', () => openIrregular(lang), irr.length >= 5),
+    row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · листайте формы и проверяйте себя', () => openIrregular(lang), irr.length >= 5),
     row('art-' + lang, 'Артикли a, an, the', 'выберите артикль или «без артикля»', () => openArticles(lang), (D.articles || []).length > 0),
     row('dictation-' + lang, 'Диктант на слух', 'послушайте фразу и запишите', () => openDictation(lang), dictationPool(lang).length >= 5),
     row('speak-' + lang, 'Произношение', 'скажите слово в микрофон или запишите себя', () => openSpeak(lang), true),
@@ -67,7 +67,8 @@ const shell = (el, title) => {
   const bar = h('i'), body = h('div', { class: 'study' }), count = h('span', { class: 'muted small' });
   W.put(el, W.topbar(title, null, 'close'), h('div', { class: 'bar' }, bar), count, body);
   el.classList.add('study-screen');
-  return { body, progress: (d, n) => { bar.style.width = Math.round(d / n * 100) + '%'; count.textContent = d + ' / ' + n; } };
+  return { body, progress: (d, n) => { bar.style.width = Math.round(d / n * 100) + '%'; count.textContent = d + ' / ' + n; },
+    clear: () => { bar.style.width = '0'; count.textContent = ''; } };
 };
 const finish = (s, id, kind, right, total, again, extra) => {
   const pct = total ? Math.round(right / total * 100) : 0;
@@ -83,15 +84,58 @@ const finish = (s, id, kind, right, total, again, extra) => {
 function openIrregular(lang) {
   W.push(el => {
     const s = shell(el, 'Неправильные глаголы');
-    const start = () => {
-      const qs = W.shuffle(W.irregulars(lang)).slice(0, 10);
+    const all = W.irregulars(lang), forms = v => v.base + ' — ' + v.past.join('/') + ' — ' + v.pp.join('/');
+    // порции по 10 в порядке словаря: сначала самые частые глаголы
+    const chunks = [];
+    for (let k = 0; k < all.length; k += 10) chunks.push(all.slice(k, k + 10));
+
+    // выбор: листать и учить или проверить себя
+    const menu = () => {
+      s.clear();
+      W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'big' }, all.length + ' глаголов'),
+          h('div', { class: 'muted' }, 'Сначала полистайте порцию и запомните три формы, потом проверьте себя на тех же глаголах.')),
+        h('div', { class: 'lvl-head' }, 'Листать и учить'),
+        h('div', { class: 'chips irr-chunks' }, chunks.map((list, k) => h('button', { class: 'chip', onclick: () => study(list, 0) },
+          (k * 10 + 1) + '–' + (k * 10 + list.length)))),
+        h('div', { class: 'col-btns' }, h('button', { class: 'btn primary wide', onclick: () => start(W.shuffle(all).slice(0, 10)) }, 'Проверить себя: 10 случайных')));
+    };
+
+    // карточка глагола: три формы, перевод, звук; листать кнопками или свайпом
+    const study = (list, i) => {
+      s.progress(i + 1, list.length);
+      const v = list[i], go = d => { const j = i + d; if (j < 0 || j >= list.length) return; study(list, j); W.speak(W.irregularPhrase(list[j]), lang); };
+      const cell = (label, val) => h('div', { class: 'irr-form' }, h('div', { class: 'muted small' }, label), h('b', null, val));
+      const card = h('div', { class: 'prompt irr-card' },
+        h('div', { class: 'muted small' }, 'Глагол ' + (i + 1) + ' из ' + list.length),
+        h('div', { class: 'big' }, v.base), h('div', { class: 'muted' }, v.t),
+        h('div', { class: 'irr-forms' }, cell('начальная', v.base), cell('прошедшее', v.past.join(' / ')), cell('3-я форма', v.pp.join(' / '))),
+        W.soundBtn(W.irregularPhrase(v), lang));
+      let x0 = null;
+      card.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+      card.addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); });
+      const last = i === list.length - 1;
+      W.put(s.body, card,
+        h('div', { class: 'row-btns' },
+          h('button', { class: 'btn', disabled: i === 0, onclick: () => go(-1) }, '← Назад'),
+          last ? h('button', { class: 'btn primary', onclick: () => start(W.shuffle(list)) }, 'Проверить эти ' + list.length)
+            : h('button', { class: 'btn primary', onclick: () => go(1) }, 'Дальше →')),
+        h('div', { class: 'col-btns' },
+          last ? null : h('button', { class: 'btn ghost', onclick: () => start(W.shuffle(list)) }, 'Уже помню — проверить эти ' + list.length),
+          h('button', { class: 'btn ghost', onclick: menu }, 'К списку порций')));
+    };
+
+    const start = list => {
+      const qs = list;
       let i = 0, right = 0;
       const wrong = [];
       const ask = () => {
         s.progress(i, qs.length);
-        if (i >= qs.length) return finish(s, 'irr-' + lang, 'irregular', right, qs.length, start,
-          wrong.length ? h('div', { class: 'list' }, wrong.map(v => h('div', { class: 'card-row' }, h('div', { class: 'cr-main' },
-            h('div', { class: 'cr-word' }, h('b', null, v.base + ' — ' + v.past.join('/') + ' — ' + v.pp.join('/'))), h('div', null, v.t))))) : null);
+        if (i >= qs.length) return finish(s, 'irr-' + lang, 'irregular', right, qs.length, () => start(W.shuffle(list)),
+          h('div', null,
+            wrong.length ? h('div', { class: 'list' }, wrong.map(v => h('div', { class: 'card-row' }, h('div', { class: 'cr-main' },
+              h('div', { class: 'cr-word' }, h('b', null, forms(v))), h('div', null, v.t))))) : null,
+            wrong.length ? h('button', { class: 'btn wide', onclick: () => study(wrong.slice(), 0) }, 'Полистать ошибки') : null,
+            h('button', { class: 'btn ghost wide', onclick: menu }, 'К списку порций')));
         const v = qs[i];
         const inp = ph => h('input', { type: 'text', class: 'write-in', placeholder: ph, autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
         const p1 = inp('прошедшее'), p2 = inp('3-я форма'), res = h('div', { class: 'result' });
@@ -110,7 +154,7 @@ function openIrregular(lang) {
           if (!ok) W.record(v.card, false, true);
           res.className = 'result ' + (ok ? 'right' : 'wrong');
           W.put(res, h('b', null, ok ? 'Верно' : 'Не совсем'),
-            h('div', null, h('b', null, v.base + ' — ' + v.past.join('/') + ' — ' + v.pp.join('/')), W.soundBtn(W.irregularPhrase(v), lang)));
+            h('div', null, h('b', null, forms(v)), W.soundBtn(W.irregularPhrase(v), lang)));
           W.put(btns, h('button', { type: 'submit', class: 'btn primary wide' }, 'Дальше'));
         } },
           h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Напишите прошедшее время и третью форму'), h('div', { class: 'big' }, v.base), h('div', { class: 'muted' }, v.t)),
@@ -122,7 +166,7 @@ function openIrregular(lang) {
       };
       ask();
     };
-    start();
+    menu();
   });
 }
 
