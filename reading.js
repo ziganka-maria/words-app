@@ -74,6 +74,13 @@ const COMMON = { en: {
   lady: 'дама, леди', king: 'король', police: 'полиция', officers: 'офицеры; полицейские', officer: 'офицер; полицейский', voice: 'голос', mind: 'ум; возражать (do you mind)', power: 'сила, власть',
   decision: 'решение', part: 'часть', parts: 'части', place: 'место', brain: 'мозг', instead: 'вместо этого', form: 'форма; образовать', process: 'процесс', system: 'система', letters: 'письма; буквы',
   recommend: 'рекомендовать', actions: 'действия', action: 'действие', downstairs: 'внизу, вниз (по лестнице)', upstairs: 'наверху, наверх', fifteen: 'пятнадцать', eighth: 'восьмой', perfectly: 'совершенно, идеально', happily: 'счастливо, радостно',
+  care: 'забота, внимание; заботиться', newspaper: 'газета', list: 'список', unable: 'неспособный (unable to — не в силах)', accept: 'принять', sudden: 'внезапный', alive: 'живой', air: 'воздух',
+  somewhere: 'где-то, куда-то', recognise: 'узнавать', lips: 'губы', let: 'позволять, пускать (let me — дай мне)', victory: 'победа', entered: 'вошёл (enter — входить)', accident: 'несчастный случай, авария', joy: 'радость',
+  kills: 'убивает (kill — убивать)', soldier: 'солдат', soldiers: 'солдаты', well: 'хорошо; ну; колодец', earlier: 'раньше, ранее', might: 'мог бы, может быть', stepped: 'шагнул (step — шагать)', aside: 'в сторону',
+  pain: 'боль', onto: 'на (с движением)', leaf: 'лист (дерева)', drop: 'капля; ронять', tongue: 'язык (орган)', silence: 'тишина, молчание', gently: 'мягко, нежно', side: 'сторона, бок',
+  modern: 'современный', society: 'общество', beyond: 'за пределами, сверх', certain: 'определённый; уверенный', researchers: 'исследователи', option: 'вариант', whether: 'ли (I wonder whether — интересно, ли)',
+  alternative: 'альтернатива', types: 'типы', examine: 'изучать, осматривать', depend: 'зависеть', remains: 'остаётся (remain — оставаться)', rather: 'скорее; довольно (rather than — вместо того чтобы)', perfect: 'идеальный',
+  suffered: 'страдал (suffer from — страдать от)', makers: 'создатели, те, кто делает',
   so: 'так; поэтому', very: 'очень', just: 'только что; просто', yes: 'да', no: 'нет', oh: 'о!', one: 'один; одна', ok: 'ладно, хорошо', mr: 'мистер', mrs: 'миссис', dr: 'доктор'
 }};
 const tokWord = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');

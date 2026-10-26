@@ -31,7 +31,7 @@ W.renderGrammar = root => {
     own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
     W.drillsBlock ? W.drillsBlock(lang) : null,
     h('div', { class: 'lessons' }, kids),
-    list.length ? h('p', { class: 'muted small' }, lang === 'en' ? 'Уроки B2 и C1 появятся в обновлениях.' : 'Новые уроки появятся в обновлениях.') : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
+    list.length ? (lang === 'en' ? null : h('p', { class: 'muted small' }, 'Новые уроки появятся в обновлениях.')) : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
 };
 
 function block(b) {
