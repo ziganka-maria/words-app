@@ -13,7 +13,7 @@ const VOICES = { 'en-us': 'en_US-lessac-high', 'en-gb': 'en_GB-cori-high' };
 const ctx = { console, addEventListener() {}, localStorage: { getItem: () => null, setItem() {} } };
 ctx.window = ctx; vm.createContext(ctx);
 // data-lib.js (помощник addDecks) — первым, core.js — последним; остальные в любом порядке
-const order = f => (f === 'data-lib.js' ? 0 : f === 'core.js' ? 3 : f.startsWith('texts-en2') ? 2 : f.startsWith('texts') ? 1.5 : 1);
+const order = f => (f === 'data-lib.js' ? 0 : f === 'core.js' ? 3 : /^texts-en[0-9]/.test(f) ? 2 : f.startsWith('texts') ? 1.5 : 1);
 for (const f of fs.readdirSync(APP).filter(f => /^(data|grammar|texts)-.*\.js$/.test(f)).concat('core.js').sort((a, b) => order(a) - order(b)))
   vm.runInContext(fs.readFileSync(path.join(APP, f), 'utf8'), ctx, { filename: f });
 const W = ctx.W; W.prepare();

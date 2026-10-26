@@ -249,7 +249,9 @@ function renderDecks() {
     } }, q.due.length + q.fresh.length ? 'Начать заучивание' : 'Повторить ещё немного'));
 
   const smart = h('div', { class: 'chips' }, W.smart(lang).map(d =>
-    h('button', { class: 'chip', onclick: () => openDeck(d) }, d.emoji + ' ' + d.title + ' · ' + d.cards.length)));
+    h('button', { class: 'chip', onclick: () => openDeck(d) }, d.emoji + ' ' + d.title + ' · ' + d.cards.length)),
+    // тренажёры живут во вкладке «Грамматика» — даём к ним короткую дорогу
+    W.drillsBlock ? h('button', { class: 'chip', onclick: () => { W.showTab('gram'); setTimeout(() => { const el = document.getElementById('drills-' + lang); if (el) el.scrollIntoView({ block: 'start' }); }, 50); } }, '🎯 Тренажёры') : null);
 
   const folders = W.builtinFolders(lang).map(f => ({ id: f.id, lang, title: f.title, decks: f.decks, builtin: true }))
     .concat(W.S.folders.filter(f => f.lang === lang).map(f => ({ id: f.id, title: f.title, decks: W.userDecks(lang).filter(d => d.folder === f.id), user: true, lang })));

@@ -31,7 +31,7 @@ W.renderGrammar = root => {
     own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
     W.drillsBlock ? W.drillsBlock(lang) : null,
     h('div', { class: 'lessons' }, kids),
-    list.length ? h('p', { class: 'muted small' }, lang === 'en' ? 'Уроки B1 и выше появятся в обновлениях.' : 'Новые уроки появятся в обновлениях.') : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
+    list.length ? h('p', { class: 'muted small' }, lang === 'en' ? 'Уроки B2 и C1 появятся в обновлениях.' : 'Новые уроки появятся в обновлениях.') : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
 };
 
 function block(b) {
@@ -86,11 +86,13 @@ function quiz(el, l, num) {
     };
     let ctl;
     if (q.o) {
-      ctl = h('div', { class: 'answers' }, q.o.map((o, k) => h('button', { class: 'btn answer', onclick: e => {
-        ctl.querySelectorAll('button').forEach((b, j) => { b.disabled = true; if (j === q.a) b.classList.add('right'); });
+      // варианты в случайном порядке, чтобы верный ответ не угадывался по месту
+      const order = W.shuffle(q.o.map((o, k) => k));
+      ctl = h('div', { class: 'answers' }, order.map(k => h('button', { class: 'btn answer', 'data-k': k, onclick: e => {
+        ctl.querySelectorAll('button').forEach(b => { b.disabled = true; if (+b.dataset.k === q.a) b.classList.add('right'); });
         if (k !== q.a) e.currentTarget.classList.add('wrong');
         after(k === q.a);
-      } }, o)));
+      } }, q.o[k])));
     } else {
       const input = h('input', { type: 'text', class: 'write-in', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
       ctl = h('form', { class: 'write', onsubmit: e => {

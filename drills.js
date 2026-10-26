@@ -33,7 +33,7 @@ W.drillsBlock = lang => {
     h('span', { class: 'l-num' + (done[id] ? ' done' : '') }, done[id] ? '✓' : '§'),
     h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title),
       h('span', { class: 'muted small' }, sub + (done[id] ? ' · лучший результат ' + done[id].best + '%' : '')))) : null;
-  return h('section', null,
+  return h('section', { id: 'drills-' + lang },
     h('div', { class: 'lvl-head' }, 'Тренажёры'),
     row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · напишите две формы', () => openIrregular(lang), irr.length >= 5),
     row('art-' + lang, 'Артикли a, an, the', 'выберите артикль или «без артикля»', () => openArticles(lang), (D.articles || []).length > 0),

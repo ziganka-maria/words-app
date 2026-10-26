@@ -64,6 +64,10 @@ const COMMON = { en: {
   top: 'верх, вершина', rest: 'отдых; остаток', moment: 'момент', piece: 'кусок, часть', sound: 'звучать; звук', simple: 'простой', social: 'социальный', media: 'медиа, СМИ', move: 'двигать(ся)',
   bright: 'яркий', large: 'большой', dead: 'мёртвый', nobody: 'никто', swallow: 'ласточка; глотать', front: 'передняя часть (in front of — перед)', forty: 'сорок', eighty: 'восемьдесят', grow: 'расти',
   grew: 'вырос, стал (grow — grew — grown)', london: 'Лондон', anna: 'Анна', tom: 'Том', 'café': 'кафе', best: 'лучший; лучше всего', news: 'новость, новости', used: 'использовал; used to — раньше (делал)',
+  nothing: 'ничего, ничто', something: 'что-то, что-нибудь', anything: 'что-нибудь; ничего (в отрицании)', everything: 'всё', everyone: 'все, каждый', everybody: 'все, каждый', everywhere: 'везде',
+  someone: 'кто-то', anyone: 'кто-нибудь; никто (в отрицании)', himself: 'себя, сам (о нём)', herself: 'себя, сама (о ней)', myself: 'себя, сам', themselves: 'себя, сами (о них)',
+  most: 'больше всего; большинство (most people)', each: 'каждый', better: 'лучше', born: 'рождённый (be born — родиться)', life: 'жизнь', idea: 'идея, мысль', going: 'идущий; be going to — собираться',
+  become: 'становиться (become — became — become)', became: 'стал (become)', seem: 'казаться', seemed: 'казался', dad: 'папа', mum: 'мама', result: 'результат', results: 'результаты',
   so: 'так; поэтому', very: 'очень', just: 'только что; просто', yes: 'да', no: 'нет', oh: 'о!', one: 'один; одна', ok: 'ладно, хорошо', mr: 'мистер', mrs: 'миссис', dr: 'доктор'
 }};
 const tokWord = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');
