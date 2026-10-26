@@ -68,6 +68,12 @@ const COMMON = { en: {
   someone: 'кто-то', anyone: 'кто-нибудь; никто (в отрицании)', himself: 'себя, сам (о нём)', herself: 'себя, сама (о ней)', myself: 'себя, сам', themselves: 'себя, сами (о них)',
   most: 'больше всего; большинство (most people)', each: 'каждый', better: 'лучше', born: 'рождённый (be born — родиться)', life: 'жизнь', idea: 'идея, мысль', going: 'идущий; be going to — собираться',
   become: 'становиться (become — became — become)', became: 'стал (become)', seem: 'казаться', seemed: 'казался', dad: 'папа', mum: 'мама', result: 'результат', results: 'результаты',
+  "you'll": 'ты, вы (+ будущее, = you will)', "we'll": 'мы (+ будущее, = we will)', "he'll": 'он (+ будущее, = he will)', "she'll": 'она (+ будущее, = she will)', "they'll": 'они (+ будущее, = they will)', "it'll": 'это (+ будущее, = it will)',
+  "i'd": 'я бы; я (= I would / I had)', "you'd": 'ты бы (= you would / you had)', "he'd": 'он бы (= he would / he had)', "she'd": 'она бы (= she would / she had)', "we'd": 'мы бы (= we would / we had)', "they'd": 'они бы (= they would / they had)',
+  yourself: 'себя, сам (о тебе)', itself: 'себя, само', own: 'собственный; свой', whenever: 'всякий раз, когда', till: 'до, пока не', past: 'мимо; прошлое', late: 'поздно; поздний', great: 'великий; огромный; отличный',
+  lady: 'дама, леди', king: 'король', police: 'полиция', officers: 'офицеры; полицейские', officer: 'офицер; полицейский', voice: 'голос', mind: 'ум; возражать (do you mind)', power: 'сила, власть',
+  decision: 'решение', part: 'часть', parts: 'части', place: 'место', brain: 'мозг', instead: 'вместо этого', form: 'форма; образовать', process: 'процесс', system: 'система', letters: 'письма; буквы',
+  recommend: 'рекомендовать', actions: 'действия', action: 'действие', downstairs: 'внизу, вниз (по лестнице)', upstairs: 'наверху, наверх', fifteen: 'пятнадцать', eighth: 'восьмой', perfectly: 'совершенно, идеально', happily: 'счастливо, радостно',
   so: 'так; поэтому', very: 'очень', just: 'только что; просто', yes: 'да', no: 'нет', oh: 'о!', one: 'один; одна', ok: 'ладно, хорошо', mr: 'мистер', mrs: 'миссис', dr: 'доктор'
 }};
 const tokWord = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');
