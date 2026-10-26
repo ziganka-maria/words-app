@@ -51,7 +51,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["notification", "уведомление", "Turn off notifications at night.", "Отключай уведомления на ночь."],
   ["settings", "настройки", "Go to settings and change the language.", "Зайдите в настройки и смените язык."],
   ["back up", "сделать резервную копию", "Back up your photos regularly.", "Регулярно делайте резервные копии фото.", "", "Существительное: backup."],
-  ["crash", "зависнуть, упасть (о программе); авария", "My laptop crashed and I lost my work.", "Мой ноутбук завис, и я потерял работу."],
+  ["crash", "зависнуть, упасть (о программе); авария", "My laptop crashed and I lost everything I'd written.", "Ноутбук вырубился, и всё, что я написал, пропало."],
   ["artificial intelligence", "искусственный интеллект", "Artificial intelligence is changing many jobs.", "Искусственный интеллект меняет многие профессии.", "", "Коротко — AI.", "ai"],
   ["robot", "робот", "Robots build cars in this factory.", "На этом заводе машины собирают роботы."]
 ]},
@@ -101,7 +101,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["excursion", "экскурсия, поездка", "We went on an excursion to the mountains.", "Мы съездили на экскурсию в горы."],
   ["visa", "виза", "Do I need a visa to visit Canada?", "Нужна ли мне виза в Канаду?"],
   ["carry-on", "ручная кладь", "You can take one carry-on bag.", "Можно взять одну сумку ручной клади.", "", "В Британии чаще hand luggage.", "carry on|hand luggage"],
-  ["round trip", "поездка туда и обратно", "A round trip ticket is cheaper.", "Билет туда и обратно дешевле.", "", "В Британии return ticket.", "return trip"],
+  ["round trip", "поездка туда и обратно", "A round-trip ticket is cheaper.", "Билет туда и обратно дешевле.", "", "В Британии return ticket.", "return trip"],
   ["sunburn", "солнечный ожог", "I got sunburn on the first day.", "В первый же день я обгорел."],
   ["aisle seat", "место у прохода", "I'd like an aisle seat, please.", "Мне место у прохода, пожалуйста.", "", "В aisle буква s не читается: «айл»."],
   ["window seat", "место у окна", "Can I have a window seat?", "Можно место у окна?"],
@@ -214,7 +214,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["goods", "товары", "The shop sells electrical goods.", "Магазин продаёт электротовары."],
   ["packaging", "упаковка", "There's too much plastic packaging.", "Слишком много пластиковой упаковки."],
   ["dry cleaner's", "химчистка", "I took my coat to the dry cleaner's.", "Я сдал пальто в химчистку.", "", "", "dry cleaners"],
-  ["hairdresser", "парикмахер", "I have an appointment at the hairdresser.", "Я записана к парикмахеру."],
+  ["hairdresser", "парикмахер", "I have an appointment at the hairdresser's.", "Я записана к парикмахеру."],
   ["overcharge", "обсчитать, взять лишнее", "I think the waiter overcharged us.", "По-моему, официант нас обсчитал."]
 ]}
 

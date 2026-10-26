@@ -26,7 +26,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["sociable", "общительный", "He's sociable and loves parties.", "Он общительный и любит вечеринки."],
   ["stubborn", "упрямый", "My brother is as stubborn as a mule.", "Мой брат упрямый как осёл."],
   ["talented", "талантливый", "She's a talented musician.", "Она талантливый музыкант."],
-  ["thoughtful", "заботливый; задумчивый", "What a thoughtful present!", "Какой внимательный подарок!"]
+  ["thoughtful", "заботливый; задумчивый", "What a thoughtful present!", "Какой продуманный подарок!"]
 ]},
 
 { id: 'b1-feelings', emoji: '🌦️', title: 'Чувства и состояния', level: 'B1', reg: 'n', cards: [
@@ -37,12 +37,12 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["delighted", "очень довольный, в восторге", "We're delighted to see you.", "Мы очень рады вас видеть."],
   ["depressed", "подавленный", "He felt depressed after losing his job.", "После потери работы он был подавлен."],
   ["disappointed", "разочарованный", "I was disappointed with the results.", "Результаты меня разочаровали."],
-  ["embarrassed", "смущённый, сконфуженный", "I felt embarrassed when I forgot her name.", "Мне было неловко, когда я забыл её имя.", "", "Ловушка: embarrassed — «смущённый», а не «беременная» (pregnant)."],
+  ["embarrassed", "смущённый, сконфуженный", "I felt embarrassed when I forgot her name.", "Мне было неловко, когда я забыл её имя.", "", "Пишется с двумя r и двумя s: embarrassed."],
   ["exhausted", "измотанный", "After the marathon I was exhausted.", "После марафона я был без сил."],
   ["frightened", "испуганный", "The child was frightened of the dark.", "Ребёнок боялся темноты."],
   ["furious", "в ярости", "Dad was furious when he saw the car.", "Папа был в ярости, когда увидел машину."],
   ["grateful", "благодарный", "I'm grateful for your help.", "Я благодарен за вашу помощь."],
-  ["guilty", "виноватый; виновный", "I feel guilty about not calling her.", "Мне неловко, что я ей не позвонил."],
+  ["guilty", "виноватый; виновный", "I feel guilty about not calling her.", "Я чувствую себя виноватым, что не позвонил ей."],
   ["homesick", "скучающий по дому", "She was homesick during her first year abroad.", "В первый год за границей она скучала по дому."],
   ["impatient", "нетерпеливый", "Don't be so impatient — the bus will come.", "Не будь таким нетерпеливым — автобус придёт."],
   ["miserable", "несчастный, жалкий", "The rain made us feel miserable.", "Из-за дождя нам было совсем тоскливо."],
@@ -102,7 +102,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["qualification", "квалификация, диплом", "You need a qualification in accounting.", "Нужна квалификация бухгалтера."],
   ["resign", "уволиться (по своему желанию)", "He resigned after ten years.", "Он ушёл с работы через десять лет."],
   ["responsibility", "ответственность, обязанность", "It's my responsibility to check the reports.", "Проверять отчёты — моя обязанность."],
-  ["staff", "персонал, сотрудники", "The hotel staff were very helpful.", "Персонал отеля очень помогал."],
+  ["staff", "персонал, сотрудники", "The hotel staff were very helpful.", "Персонал отеля был очень отзывчивым."],
   ["temporary", "временный", "It's only a temporary job.", "Это всего лишь временная работа."],
   ["unemployed", "безработный", "He's been unemployed for six months.", "Он полгода без работы."],
   ["wage", "заработная плата (почасовая, недельная)", "The minimum wage has increased.", "Минимальная зарплата выросла.", "", "Wage — обычно за час или неделю, salary — за месяц или год."],
@@ -129,7 +129,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["loss", "убыток; потеря", "The company made a loss last year.", "В прошлом году компания понесла убытки."],
   ["profit", "прибыль", "The shop made a small profit.", "Магазин получил небольшую прибыль."],
   ["purchase", "покупка; покупать", "Keep the receipt for your purchase.", "Сохраните чек о покупке."],
-  ["supply", "поставка, запас; поставлять", "Water supply was cut off for two hours.", "Подачу воды отключили на два часа."],
+  ["supply", "поставка, запас; поставлять", "The water supply was cut off for two hours.", "Подачу воды отключили на два часа."],
   ["demand", "спрос; требовать", "There is a high demand for nurses.", "На медсестёр большой спрос."],
   ["value", "ценность, стоимость", "The value of the house has gone up.", "Стоимость дома выросла."],
   ["worth", "стоящий; стоимостью", "This painting is worth a lot of money.", "Эта картина стоит больших денег."],
@@ -140,7 +140,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
 { id: 'b1-study', emoji: '🎓', title: 'Учёба и наука', level: 'B1', reg: 'n', cards: [
   ["academic", "академический, учебный", "The academic year starts in September.", "Учебный год начинается в сентябре."],
   ["assignment", "задание", "I have to finish my assignment by Friday.", "Мне нужно закончить задание к пятнице."],
-  ["attend", "посещать", "Over a hundred people attended the lecture.", "Лекцию посетили больше ста человек.", "", "Ловушка: attend — «посещать», а не «внимание»."],
+  ["attend", "посещать", "Over a hundred people attended the lecture.", "Лекцию посетили больше ста человек.", "", "Attend a lecture — без предлога (не attend at)."],
   ["campus", "кампус, территория университета", "Students live on campus.", "Студенты живут в кампусе."],
   ["cheat", "списывать; жульничать", "He was caught cheating in the exam.", "Его поймали на списывании."],
   ["concentrate", "сосредоточиться", "I can't concentrate with this noise.", "Я не могу сосредоточиться при таком шуме."],

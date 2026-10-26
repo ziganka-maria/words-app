@@ -18,7 +18,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["for and against", "за и против", "Write about the arguments for and against.", "Напишите доводы за и против.", "", "", "pros and cons"],
   ["advantage", "преимущество", "One advantage of the city is the transport.", "Одно из преимуществ города — транспорт."],
   ["disadvantage", "недостаток", "The main disadvantage is the price.", "Главный недостаток — цена."],
-  ["benefit", "польза, выгода", "Exercise has many benefits.", "У упражнений много пользы."],
+  ["benefit", "польза, выгода", "Exercise has many benefits.", "Упражнения приносят много пользы."],
   ["drawback", "минус, недостаток", "The only drawback is the noise.", "Единственный минус — шум."],
   ["persuasive", "убедительный", "She made a persuasive speech.", "Она произнесла убедительную речь."],
   ["oppose", "выступать против", "Many people oppose the new law.", "Многие выступают против нового закона."],
@@ -65,7 +65,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
 { id: 'b1-life', emoji: '🕯️', title: 'События жизни', level: 'B1', reg: 'n', cards: [
   ["birth", "рождение", "What's your date of birth?", "Какая у вас дата рождения?"],
   ["childhood", "детство", "I had a happy childhood.", "У меня было счастливое детство."],
-  ["adulthood", "взрослая жизнь", "The step from childhood to adulthood is hard.", "Переход от детства к взрослой жизни труден."],
+  ["adulthood", "взрослая жизнь", "The transition from childhood to adulthood can be difficult.", "Переход от детства к взрослой жизни бывает трудным."],
   ["upbringing", "воспитание", "She had a strict upbringing.", "Её воспитывали строго."],
   ["fall in love", "влюбиться", "They fell in love at first sight.", "Они влюбились с первого взгляда."],
   ["propose", "сделать предложение; предлагать", "He proposed to her in Paris.", "Он сделал ей предложение в Париже."],
@@ -93,7 +93,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
 ]},
 
 { id: 'b1-office', emoji: '🗂️', title: 'В офисе', level: 'B1', reg: 'n', cards: [
-  ["agenda", "повестка дня", "What's on the agenda today?", "Что сегодня на повестке?", "", "Ловушка: agenda — «повестка», а не «агент»."],
+  ["agenda", "повестка дня", "What's on the agenda today?", "Что сегодня на повестке?", "", "Читается «эджéнда»."],
   ["minutes", "протокол (собрания)", "Who's taking the minutes?", "Кто ведёт протокол?"],
   ["report", "отчёт; сообщать", "I have to write a report.", "Мне нужно написать отчёт."],
   ["presentation", "презентация", "She gave a great presentation.", "Она отлично выступила с презентацией."],
@@ -135,7 +135,7 @@ addDecks('en', 'en-b1', 'Английский · B1', [
   ["shape", "форма", "What shape is it?", "Какой это формы?"],
   ["circle", "круг", "Draw a circle.", "Нарисуй круг."],
   ["triangle", "треугольник", "The roof is shaped like a triangle.", "Крыша в форме треугольника."],
-  ["rectangle", "прямоугольник", "The table is a rectangle.", "Стол прямоугольный."],
+  ["rectangle", "прямоугольник", "Cut the paper into a rectangle.", "Вырежи из бумаги прямоугольник."],
   ["oval", "овальный; овал", "She has an oval face.", "У неё овальное лицо."],
   ["pointed", "острый, заострённый", "The cat has pointed ears.", "У кошки острые уши."],
   ["shiny", "блестящий", "He has a shiny new car.", "У него блестящая новая машина."],

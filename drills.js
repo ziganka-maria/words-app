@@ -196,12 +196,22 @@ const SR_ERRORS = {
   'language-not-supported': 'Телефон не умеет распознавать этот язык. Попробуйте способ «Записать себя и сравнить».'
 };
 // запись с микрофона: вернёт адрес записи для проигрывания
+// что сейчас занимает микрофон или динамик в упражнении — чтобы остановить при переходе дальше и уходе с экрана
+const live = { sr: null, audio: null, url: null };
+W.stopMic = () => {
+  if (live.sr) { const r = live.sr; live.sr = null; try { r.abort(); } catch (e) {} }
+  if (live.audio) { live.audio.onended = null; live.audio.pause(); live.audio = null; }
+  if (live.url) { URL.revokeObjectURL(live.url); live.url = null; }
+};
 const recordClip = ms => navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => new Promise((ok, fail) => {
-  const rec = new MediaRecorder(stream), parts = [];
+  const release = () => stream.getTracks().forEach(t => t.stop());
+  let rec;
+  try { rec = new MediaRecorder(stream); } catch (x) { release(); return fail(x); }
+  const parts = [];
   rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
-  rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); parts.length ? ok(URL.createObjectURL(new Blob(parts, { type: rec.mimeType || 'audio/mp4' }))) : fail(new Error('empty')); };
-  rec.onerror = e => { stream.getTracks().forEach(t => t.stop()); fail(e.error || e); };
-  rec.start();
+  rec.onstop = () => { release(); parts.length ? ok(URL.createObjectURL(new Blob(parts, { type: rec.mimeType || 'audio/mp4' }))) : fail(new Error('empty')); };
+  rec.onerror = e => { release(); fail(e.error || e); };
+  try { rec.start(); } catch (x) { release(); return fail(x); }
   setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, ms);
 }));
 
@@ -226,6 +236,7 @@ function openSpeak(lang) {
       if (!qs.length) return W.put(s.body, h('div', { class: 'summary' }, h('p', null, 'Пока не из чего составить упражнение — сначала поучите слова.'), h('button', { class: 'btn primary', onclick: W.back }, 'Понятно')));
       let i = 0, right = 0;
       const ask = () => {
+        W.stopMic();
         s.progress(i, qs.length);
         if (i >= qs.length) return finish(s, 'speak-' + lang, 'speak', right, qs.length, start);
         const c = qs[i], res = h('div', { class: 'result' }), main = h('div', { class: 'col-btns' });
@@ -242,7 +253,8 @@ function openSpeak(lang) {
           mic.onclick = () => {
             W.stopSpeak();
             let got = false, failed = false;
-            const r = W.currentSR = new SR();
+            W.stopMic();
+            const r = live.sr = new SR();
             r.lang = W.LANGS[lang].tts; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
             W.put(mic, '… говорите'); mic.disabled = true;
             W.put(res); res.className = 'result';
@@ -261,7 +273,7 @@ function openSpeak(lang) {
               failed = true; fail(SR_ERRORS[e.error] || 'Ошибка распознавания (' + e.error + '). Попробуйте ещё раз или способ «Записать себя и сравнить».');
             };
             r.onend = () => {
-              if (W.currentSR === r) W.currentSR = null;
+              if (live.sr === r) live.sr = null;
               if (!mic.isConnected || (retried && failed && !res.textContent && !got)) return;
               mic.disabled = false; W.put(mic, '🎙 Сказать ещё раз');
               if (!got && !failed) fail(SR_ERRORS['no-speech']);
@@ -275,17 +287,18 @@ function openSpeak(lang) {
         const selfCheck = () => {
           const rec = h('button', { class: 'btn primary wide' }, '🎙 Записать (3 секунды)');
           rec.onclick = () => {
-            W.stopSpeak();
+            W.stopSpeak(); W.stopMic();
             rec.disabled = true; W.put(rec, '● идёт запись — говорите');
             W.put(res); res.className = 'result';
             recordClip(3000).then(url => {
               if (!rec.isConnected) return;
               rec.disabled = false; W.put(rec, '🎙 Записать ещё раз');
-              const mine = new Audio(url);
+              const mine = live.audio = new Audio(url); live.url = url;
               const playMine = h('button', { class: 'btn', onclick: () => { W.stopSpeak(); mine.currentTime = 0; mine.play().catch(() => {}); } }, '▶ Моя запись');
               res.className = 'result close';
-              W.put(res, h('b', null, 'Сравните'), h('div', null, 'Сначала звучит ваша запись, потом диктор. Похоже?'),
-                h('div', { class: 'row-btns' }, playMine, W.soundBtn(c.w, lang)),
+              const speaker = W.soundBtn(c.w, lang);
+              W.put(res, h('b', null, 'Сравните'), h('div', null, speaker ? 'Послушайте свою запись и диктора. Похоже?' : 'Послушайте свою запись. Чтобы сравнить с диктором, включите звук в «Профиле».'),
+                h('div', { class: 'row-btns' }, playMine, speaker),
                 h('div', { class: 'row-btns' }, h('button', { class: 'btn', onclick: () => next(false) }, 'Ещё нет'), h('button', { class: 'btn primary', onclick: () => next(true) }, 'Похоже')));
               mine.onended = () => { mine.onended = null; if (rec.isConnected) W.speakWait(c.w, lang); };
               mine.play().catch(() => W.speakWait(c.w, lang));
@@ -360,10 +373,10 @@ function grammarRetry(lang) {
         s.body.append(h('button', { class: 'btn primary wide', onclick: () => { i++; ask(); } }, 'Дальше'));
       };
       let ctl;
-      if (q.o) ctl = h('div', { class: 'answers' }, q.o.map((o, k) => h('button', { class: 'btn answer', onclick: e => {
-        ctl.querySelectorAll('button').forEach((b, j) => { b.disabled = true; if (j === q.a) b.classList.add('right'); });
+      if (q.o) ctl = h('div', { class: 'answers' }, W.shuffle(q.o.map((o, k) => k)).map(k => h('button', { class: 'btn answer', 'data-k': k, onclick: e => {
+        ctl.querySelectorAll('button').forEach(b => { b.disabled = true; if (+b.dataset.k === q.a) b.classList.add('right'); });
         if (k !== q.a) e.currentTarget.classList.add('wrong'); after(k === q.a);
-      } }, o)));
+      } }, q.o[k])));
       else { const input = h('input', { type: 'text', class: 'write-in', autocapitalize: 'off', spellcheck: 'false' });
         ctl = h('form', { class: 'write', onsubmit: e => { e.preventDefault(); if (input.readOnly || !input.value.trim()) return; input.readOnly = true; after(q.t.some(t => W.check(input.value, { w: t }) === 'ok')); } }, input, h('button', { type: 'submit', class: 'btn primary wide' }, 'Проверить')); }
       W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, l.title), h('div', { class: 'q' }, q.q)), ctl, res);

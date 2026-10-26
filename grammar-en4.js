@@ -46,7 +46,7 @@ GRAMMAR.en.push(
     { t: 'tip', h: 'Вопрос «Сколько ты уже…?» почти всегда начинается с <b>How long have you been…?</b>' }
   ],
   quiz: [
-    { q: "I ___ for an hour. (wait)", o: ['am waiting', "'ve been waiting", 'waited'], a: 1, w: 'Длится до сих пор, важна длительность — have been waiting.' },
+    { q: "I ___ for an hour and she still isn't here. (wait)", o: ['am waiting', "'ve been waiting", 'waited'], a: 1, w: 'Длится до сих пор, важна длительность — have been waiting.' },
     { q: 'How long ___ you been learning English?', o: ['have', 'did', 'are'], a: 0, w: 'How long have you been…?' },
     { q: 'It ___ raining since morning.', o: ['has been', 'have been', 'was'], a: 0, w: 'It → has been.' },
     { q: 'I have ___ him for years. (know)', o: ['been knowing', 'known', 'knowing'], a: 1, w: 'Know — глагол состояния: have known.' },
@@ -72,7 +72,7 @@ GRAMMAR.en.push(
     { t: 'warn', h: 'Если порядок понятен из <b>before / after</b>, можно и Past Simple: <i>I ate before I left</i>. Past Perfect нужен, когда без него непонятно, что было раньше.' }
   ],
   quiz: [
-    { q: 'When we arrived, the train ___ .', o: ['left', 'had left', 'has left'], a: 1, w: 'Поезд ушёл раньше нашего прихода — had left.' },
+    { q: 'By the time we arrived, the train ___ .', o: ['left', 'had left', 'has left'], a: 1, w: 'Поезд ушёл раньше нашего прихода — had left.' },
     { q: "I ___ never seen snow before I moved to Canada.", o: ['had', 'have', 'was'], a: 0, w: 'Опыт до момента в прошлом — had seen.' },
     { q: 'By the time he called, I ___ to bed.', o: ['went', 'had gone', 'have gone'], a: 1, w: 'By the time — had gone.' },
     { q: 'She was upset because she ___ her phone.', o: ['had lost', 'has lost', 'loses'], a: 0, w: 'Потеря была раньше — had lost.' },
@@ -129,7 +129,7 @@ GRAMMAR.en.push(
     { q: 'If she had a car, she ___ drive to work.', o: ['will', 'would', 'does'], a: 1, w: 'Результат — would.' },
     { q: 'If I were you, I ___ call him.', o: ['would', 'will', 'am'], a: 0, w: 'Совет — If I were you, I would…' },
     { q: 'What would you do if you ___ the lottery?', o: ['win', 'won', 'would win'], a: 1, w: 'If + Past Simple: won.' },
-    { q: 'If it ___ warmer, we could go to the beach.', o: ['was', 'is', 'will be'], a: 0, w: 'If + Past: was / were.' },
+    { q: 'If it ___ warmer, we would go to the beach.', o: ['was', 'is', 'will be'], a: 0, w: 'If + Past: was / were.' },
     { q: 'Какая фраза — нереальное условие?', o: ['If it rains, I will stay.', 'If I knew her number, I would call.', 'If you heat ice, it melts.'], a: 1, w: 'If + Past, would — второй тип.' },
     { q: 'Поставьте глагол: If I ___ (have) more time, I would read more.', t: ['had'], w: 'If I had more time…' },
     { q: 'I ___ (not / buy) that phone if I were you.', t: ["wouldn't buy", 'would not buy'], w: "I wouldn't buy that phone." }
@@ -148,7 +148,7 @@ GRAMMAR.en.push(
       ['This cheese is made in France.', 'Этот сыр делают во Франции.'], ['The window was broken last night.', 'Окно разбили вчера ночью.'],
       ['The film was directed by Christopher Nolan.', 'Фильм снял Кристофер Нолан.'], ['My flight has been cancelled.', 'Мой рейс отменили.'],
       ['The results will be announced tomorrow.', 'Результаты объявят завтра.'], ['Where were you born?', 'Где ты родился?']] },
-    { t: 'tip', h: 'Русское «меня зовут», «мне сказали», «его уволили» часто переводится пассивом: <i>I was told</i>, <i>he was fired</i>.' },
+    { t: 'tip', h: 'Русское «меня пригласили», «мне сказали», «его уволили» часто переводится пассивом: <i>I was invited</i>, <i>I was told</i>, <i>he was fired</i>.' },
     { t: 'warn', h: '«Я родился» — только пассив: <b>I was born</b>, а не «I born» или «I am born».' }
   ],
   quiz: [
@@ -157,7 +157,7 @@ GRAMMAR.en.push(
     { q: 'My wallet has ___ stolen.', o: ['be', 'being', 'been'], a: 2, w: 'Present Perfect Passive — has been stolen.' },
     { q: 'The book was written ___ Agatha Christie.', o: ['from', 'by', 'with'], a: 1, w: 'Кто сделал — by.' },
     { q: 'I ___ born in 1990.', o: ['am', 'was', 'have'], a: 1, w: 'I was born.' },
-    { q: 'The results ___ announced tomorrow.', o: ['will be', 'will', 'are being'], a: 0, w: 'Будущее — will be + V3.' },
+    { q: 'The results ___ announced tomorrow.', o: ['will be', 'will', 'are announce'], a: 0, w: 'Будущее — will be + V3.' },
     { q: 'Сделайте пассив: They clean the office every day. → The office ___ every day.', t: ['is cleaned'], w: 'The office is cleaned every day.' },
     { q: 'Пассив Past: Someone stole my bike. → My bike ___ .', t: ['was stolen'], w: 'My bike was stolen.' }
   ]
@@ -258,12 +258,12 @@ GRAMMAR.en.push(
   ],
   quiz: [
     { q: "I ___ my dentist at 3 p.m. tomorrow. (договорились)", o: ["'m seeing", "'ll see", 'see'], a: 0, w: 'Договорённость — Present Continuous.' },
-    { q: 'The train ___ at 7:15.', o: ['is going to leave', 'leaves', 'will be leaving'], a: 1, w: 'Расписание — Present Simple.' },
+    { q: 'The train ___ at 7:15.', o: ['is leave', 'leaves', 'leaving'], a: 1, w: 'Расписание — Present Simple.' },
     { q: "The phone's ringing. — I ___ get it!", o: ["'m going to", "'ll", "'m getting"], a: 1, w: 'Решение в момент речи — will.' },
     { q: "I've decided. I ___ learn to drive this year.", o: ["'ll", "'m going to", 'learn'], a: 1, w: 'Принятое решение — going to.' },
     { q: "I'll call you when I ___ home.", o: ['get', 'will get', 'am getting'], a: 0, w: 'После when — настоящее.' },
     { q: 'This time tomorrow I ___ to Rome.', o: ["'ll fly", "'ll be flying", 'fly'], a: 1, w: 'Процесс в момент будущего — will be flying.' },
-    { q: 'Спросите о планах: What ___ you ___ tonight? (do)', o: ['will / do', 'are / doing', 'do / do'], a: 1, w: 'What are you doing tonight?' },
+    { q: 'Спросите о планах: What ___ you ___ tonight? (do)', o: ['are / do', 'are / doing', 'do / doing'], a: 1, w: 'What are you doing tonight?' },
     { q: 'Поставьте глагол: Wait here until I ___ (come) back.', t: ['come'], w: 'После until — настоящее: until I come back.' }
   ]
 },

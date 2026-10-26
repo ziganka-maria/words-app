@@ -178,6 +178,7 @@ window.addEventListener('popstate', () => {
   let closed = false;
   while (stack.length > want) { stack.pop().el.remove(); closed = true; }
   if (W.stopSpeak) W.stopSpeak();
+  if (W.stopMic) W.stopMic();
   if (!st.m) { modalEntry = false; hideModal(); }
   if (closed) {
     const top = stack[stack.length - 1];
