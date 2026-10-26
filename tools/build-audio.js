@@ -23,6 +23,8 @@ for (const d of W.allDecks('en')) for (const c of d.cards) { texts.add(W.speechT
 for (const l of (ctx.GRAMMAR || {}).en || []) for (const b of l.blocks) if (b.t === 'ex') for (const r of b.rows) texts.add(W.speechText(r[0]));
 for (const t of W.audioExtra ? W.audioExtra('en') : []) texts.add(W.speechText(t));
 for (const t of (ctx.TEXTS || {}).en || []) for (const s of t.p.flat()) texts.add(W.speechText(s[0]));
+// три формы неправильных глаголов для тренажёра
+for (const v of W.irregulars('en')) texts.add(W.speechText(W.irregularPhrase(v)));
 texts.delete('');
 
 const lctx = {}; vm.createContext(lctx);

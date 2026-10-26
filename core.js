@@ -365,6 +365,20 @@ W.newDeck = (lang, title, folder) => {
 W.newCard = (lang, f) => Object.assign({ id: W.uid('c'), lang, w: '', t: '', ex: '', et: '', r: 'n', n: '' }, f);
 
 W.shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+// три формы из заметок карточек: «Go — went — gone.»
+W.irregulars = lang => {
+  const seen = new Set(), out = [];
+  for (const c of W.allCards(lang)) {
+    const m = (c.n || '').match(/^([A-Z][a-z]+) — ([a-z]+(?:\/[a-z]+)?) — ([a-z]+(?:\/[a-z]+)?)[ .]/);
+    if (!m || seen.has(m[1].toLowerCase())) continue;
+    seen.add(m[1].toLowerCase());
+    out.push({ base: m[1].toLowerCase(), past: m[2].split('/'), pp: m[3].split('/'), t: c.t, card: c });
+  }
+  return out;
+};
+// фраза для озвучки трёх форм: «go, went, gone» — её записывает tools/build-audio.js
+W.irregularPhrase = v => v.base + ', ' + v.past[0] + ', ' + v.pp[0];
+
 // ---------- озвучка из файлов ----------
 // текст → имя файла: одинаково считают приложение и tools/build-audio.js
 W.speechText = t => (t || '').replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim();

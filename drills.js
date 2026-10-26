@@ -13,17 +13,7 @@ W.drillDone = (id, kind, pct) => {
 };
 
 // ---------- данные для тренажёров ----------
-// три формы из заметок карточек: «Go — went — gone.»
-W.irregulars = lang => {
-  const seen = new Set(), out = [];
-  for (const c of W.allCards(lang)) {
-    const m = (c.n || '').match(/^([A-Z][a-z]+) — ([a-z]+(?:\/[a-z]+)?) — ([a-z]+(?:\/[a-z]+)?)[ .]/);
-    if (!m || seen.has(m[1].toLowerCase())) continue;
-    seen.add(m[1].toLowerCase());
-    out.push({ base: m[1].toLowerCase(), past: m[2].split('/'), pp: m[3].split('/'), t: c.t, card: c });
-  }
-  return out;
-};
+// W.irregulars и W.irregularPhrase — в core.js (их же использует озвучка)
 // предложения для диктанта: примеры из колод своего уровня и предложения из текстов (до 12 слов)
 const dictationPool = lang => {
   const lv = W.userLevel(lang) === 'A0' ? 'A1' : W.userLevel(lang);
@@ -100,7 +90,7 @@ function openIrregular(lang) {
           if (!ok) W.record(v.card, false, true);
           res.className = 'result ' + (ok ? 'right' : 'wrong');
           W.put(res, h('b', null, ok ? 'Верно' : 'Не совсем'),
-            h('div', null, h('b', null, v.base + ' — ' + v.past.join('/') + ' — ' + v.pp.join('/')), W.soundBtn(v.base + ', ' + v.past[0] + ', ' + v.pp[0], lang)));
+            h('div', null, h('b', null, v.base + ' — ' + v.past.join('/') + ' — ' + v.pp.join('/')), W.soundBtn(W.irregularPhrase(v), lang)));
           W.put(btns, h('button', { type: 'submit', class: 'btn primary wide' }, 'Дальше'));
         } },
           h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Напишите прошедшее время и третью форму'), h('div', { class: 'big' }, v.base), h('div', { class: 'muted' }, v.t)),
