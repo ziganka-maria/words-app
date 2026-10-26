@@ -190,6 +190,7 @@ const SR_ERRORS = {
   'not-allowed': 'Нет доступа к микрофону. Разрешите микрофон для этого сайта в настройках браузера.',
   'service-not-allowed': 'Телефон не дал распознавать речь. Попробуйте способ «Записать себя и сравнить».',
   'network': 'Нужен интернет: речь распознаёт сервер браузера.',
+  'aborted': 'Распознавание прервалось. На Android проверьте, что есть приложение Google и в его настройках включён голосовой ввод. Или попробуйте «Записать себя и сравнить».',
   'no-speech': 'Ничего не услышала. Говорите сразу после нажатия, громко и близко к телефону.',
   'audio-capture': 'Микрофон не найден или занят другим приложением.',
   'language-not-supported': 'Телефон не умеет распознавать этот язык. Попробуйте способ «Записать себя и сравнить».'
@@ -237,10 +238,11 @@ function openSpeak(lang) {
           let tries = 0;
           const mic = h('button', { class: 'btn primary wide' }, '🎙 Сказать');
           const fail = text => { res.className = 'result wrong'; W.put(res, h('b', null, 'Не получилось'), h('div', null, text)); };
+          let retried = false;
           mic.onclick = () => {
             W.stopSpeak();
             let got = false, failed = false;
-            const r = new SR();
+            const r = W.currentSR = new SR();
             r.lang = W.LANGS[lang].tts; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
             W.put(mic, '… говорите'); mic.disabled = true;
             W.put(res); res.className = 'result';
@@ -253,9 +255,14 @@ function openSpeak(lang) {
               W.put(res, h('b', null, hit ? 'Отлично, понятно!' : 'Не расслышала'), h('div', null, 'Распознано: «' + alts[0] + '»'));
               if (hit || tries >= 2) W.put(main, h('button', { class: 'btn primary wide', onclick: () => next(!!hit) }, 'Дальше'));
             };
-            r.onerror = e => { failed = true; fail(SR_ERRORS[e.error] || 'Ошибка распознавания (' + e.error + '). Попробуйте ещё раз или способ «Записать себя и сравнить».'); };
+            r.onerror = e => {
+              // первый обрыв на Android часто случайный — молча пробуем ещё раз
+              if (e.error === 'aborted' && !retried && !got) { retried = true; failed = true; setTimeout(() => { if (mic.isConnected) mic.onclick(); }, 400); return; }
+              failed = true; fail(SR_ERRORS[e.error] || 'Ошибка распознавания (' + e.error + '). Попробуйте ещё раз или способ «Записать себя и сравнить».');
+            };
             r.onend = () => {
-              if (!mic.isConnected) return;
+              if (W.currentSR === r) W.currentSR = null;
+              if (!mic.isConnected || (retried && failed && !res.textContent && !got)) return;
               mic.disabled = false; W.put(mic, '🎙 Сказать ещё раз');
               if (!got && !failed) fail(SR_ERRORS['no-speech']);
             };

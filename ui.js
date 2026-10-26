@@ -67,7 +67,8 @@ let pending = null; // как завершить текущую фразу (чт
 W.stopSpeak = () => {
   player.onended = player.onerror = null;
   try { player.pause(); } catch (e) {}
-  if (W.canSpeak()) speechSynthesis.cancel();
+  // cancel() без нужды мешает микрофону на Android, поэтому только если голос телефона что-то читает
+  if (W.canSpeak() && (speechSynthesis.speaking || speechSynthesis.pending)) speechSynthesis.cancel();
   if (pending) { const p = pending; pending = null; p(); }
 };
 // прочитать фразу и дождаться конца: запись нейросетевого голоса, а если её нет или звук не разрешён — голос телефона
