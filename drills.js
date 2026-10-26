@@ -151,7 +151,7 @@ function openIrregular(lang) {
           const ok = ok1 && ok2;
           done = true; p1.readOnly = p2.readOnly = true;
           if (ok) right++; else wrong.push(v);
-          if (!ok) W.record(v.card, false, true);
+          if (!ok && v.card) W.record(v.card, false, true);
           res.className = 'result ' + (ok ? 'right' : 'wrong');
           W.put(res, h('b', null, ok ? 'Верно' : 'Не совсем'),
             h('div', null, h('b', null, forms(v)), W.soundBtn(W.irregularPhrase(v), lang)));

@@ -374,6 +374,9 @@ W.irregulars = lang => {
     seen.add(m[1].toLowerCase());
     out.push({ base: m[1].toLowerCase(), past: m[2].split('/'), pp: m[3].split('/'), t: c.t, card: c });
   }
+  // глаголы без своей карточки (у слова уже есть карточка с другим значением) — из data-en-irr.js
+  for (const [base, past, pp, t] of ((window.IRREGULAR_EXTRA || {})[lang] || []))
+    if (!seen.has(base)) { seen.add(base); out.push({ base, past: past.split('/'), pp: pp.split('/'), t }); }
   return out;
 };
 // фраза для озвучки трёх форм: «go, went, gone» — её записывает tools/build-audio.js
