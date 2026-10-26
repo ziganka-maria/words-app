@@ -23,7 +23,7 @@ GRAMMAR.en.push(
     { q: 'If I had studied harder at school, I ___ a better job now.', o: ['would have', 'would have had', 'had'], a: 0, w: 'Смешанное: прошлое условие → результат сейчас (now): would have.' },
     { q: "If you ___ me the truth yesterday, I wouldn't be angry now.", o: ['told', 'had told', 'would tell'], a: 1, w: 'Смешанное: прошлое (yesterday) → результат сейчас (now): had told … wouldn’t be.' },
     { q: 'Какая фраза о прошлом, которое не изменить?', o: ['If it rains, we stay home.', 'If I had seen him, I would have said hello.', 'If I had money, I would buy it.'], a: 1, w: 'Had + V3 / would have + V3 — третий тип.' },
-    { q: 'Допишите: If I had known, I ___ (come).', t: ['would have come', "would've come"], w: 'I would have come.' },
+    { q: 'Допишите: If I had known, I ___ (come).', t: ['would have come', "would've come", "'d have come"], w: 'I would have come.' },
     { q: 'Допишите: If you ___ (not / call), I would have forgotten.', t: ["hadn't called", 'had not called'], w: "If you hadn't called…" }
   ]
 },
@@ -39,7 +39,7 @@ GRAMMAR.en.push(
     { t: 'ex', rows: [
       ['I wish I lived by the sea.', 'Жаль, что я не живу у моря.'], ["I wish I hadn't eaten so much.", 'Зря я столько съел.'],
       ['I wish it would stop raining.', 'Хоть бы дождь перестал.'], ['If only I knew the answer!', 'Если бы я только знал ответ!'],
-      ['She wishes she could speak French.', 'Ей бы хотелось говорить по-французски.']] },
+      ['She wishes she could speak French.', 'Ей хотелось бы уметь говорить по-французски.']] },
     { t: 'warn', h: 'О себе <b>wish + would</b> не говорят: «I wish I would…» — ошибка. Надо <i>I wish I could…</i> или <i>I wish I were…</i>' },
     { t: 'tip', h: 'С be часто ставят <b>were</b> для всех лиц: <i>I wish I <b>were</b> taller.</i> В разговорной речи можно и was.' }
   ],
@@ -153,8 +153,8 @@ GRAMMAR.en.push(
     { q: '___ tired, she went to bed early.', o: ['Felt', 'Feeling', 'Having felt'], a: 1, w: 'Причина, одновременно — Feeling.' },
     { q: '___ in 1850, the bridge is still in use.', o: ['Building', 'Built', 'Having built'], a: 1, w: 'Мост построили — пассив: Built.' },
     { q: '___ the report, he sent it to his boss.', o: ['Having written', 'Written', 'Write'], a: 0, w: 'Сначала написал, потом отправил — Having written.' },
-    { q: 'The man ___ next to me was very loud.', o: ['sat', 'sitting', 'having sat'], a: 1, w: '= who was sitting → sitting.' },
-    { q: 'Это предложение с ошибкой?', o: ['Walking to school, I saw a fox.', 'Walking to school, a fox crossed the road.', 'Seeing the fox, I stopped.'], a: 1, w: 'Лиса не шла в школу — подлежащие не совпадают.' },
+    { q: 'The man ___ next to me was very loud.', o: ['sits', 'sitting', 'having sat'], a: 1, w: '= who was sitting → sitting.' },
+    { q: 'Какое предложение с ошибкой?', o: ['Walking to school, I saw a fox.', 'Walking to school, a fox crossed the road.', 'Seeing the fox, I stopped.'], a: 1, w: 'Лиса не шла в школу — подлежащие не совпадают.' },
     { q: '___ what to say, I stayed silent.', o: ["Not knowing", "Don't knowing", 'Knowing not'], a: 0, w: 'Отрицание — Not knowing.' },
     { q: 'Сократите: The car which was stolen last week was found. → The car ___ last week was found.', t: ['stolen'], w: 'The car stolen last week…' },
     { q: 'Сократите: People who live here are friendly. → People ___ here are friendly.', t: ['living'], w: 'People living here…' }
@@ -167,7 +167,8 @@ GRAMMAR.en.push(
       ['+ to do', 'agree, refuse, offer, promise, threaten', 'He <b>offered to help</b>.'],
       ['+ кого + to do', 'advise, warn, remind, encourage, persuade, invite', 'She <b>reminded me to call</b>.'],
       ['+ -ing', 'deny, admit, suggest, recommend', 'He <b>denied taking</b> the money.'],
-      ['+ предлог + -ing', 'apologise for, insist on, accuse of, blame for', 'She <b>apologised for being</b> late.'],
+      ['+ предлог + -ing', 'apologise for, insist on', 'She <b>apologised for being</b> late.'],
+      ['+ кого + предлог + -ing', 'accuse sb of, blame sb for', 'They <b>accused him of cheating</b>.'],
       ['+ that', 'explain, claim, complain, admit, insist', 'He <b>complained that</b> it was cold.']] },
     { t: 'ex', rows: [
       ['She refused to answer.', 'Она отказалась отвечать.'], ['The doctor advised me to rest.', 'Врач посоветовал мне отдыхать.'],
@@ -202,7 +203,7 @@ GRAMMAR.en.push(
       ['Did you remember to buy milk?', 'Ты не забыл купить молока?'], ['I remember living in that house.', 'Я помню, как жил в том доме.'],
       ['Try turning it off and on again.', 'Попробуй выключить и снова включить.']] },
     { t: 'tip', h: 'Простое правило: <b>to</b> смотрит в будущее (что нужно сделать), <b>-ing</b> — на то, что уже было или происходит.' },
-    { t: 'warn', h: '<b>like / love / hate / prefer</b> допускают оба варианта почти без разницы: <i>I like swimming = I like to swim.</i>' }
+    { t: 'tip', h: '<b>like / love / hate / prefer</b> допускают оба варианта почти без разницы: <i>I like swimming = I like to swim.</i> Но <b>would like</b> — только с to: <i>I’d like to swim.</i>' }
   ],
   quiz: [
     { q: 'He stopped ___ when he was 40. (бросил курить)', o: ['to smoke', 'smoking', 'smoke'], a: 1, w: 'Перестал — stop + -ing.' },
@@ -232,14 +233,14 @@ GRAMMAR.en.push(
     { t: 'warn', h: 'Глаголы состояния (know, like, own) в Continuous не ставят: <i>I <b>had known</b> him for years</i>, а не «had been knowing».' }
   ],
   quiz: [
-    { q: 'She was out of breath because she ___ .', o: ['ran', 'had been running', 'was run'], a: 1, w: 'Объясняем результат процессом — had been running.' },
+    { q: 'She was out of breath because she ___ .', o: ['runs', 'had been running', 'was run'], a: 1, w: 'Объясняем результат процессом — had been running.' },
     { q: 'We ___ for two hours when the bus finally came.', o: ['had been waiting', 'were waiting', 'waited'], a: 0, w: 'Длительность до момента — had been waiting.' },
     { q: 'When I got home, I ___ that someone had broken in.', o: ['had realised', 'realised', 'was realising'], a: 1, w: 'Основное событие — Past Simple.' },
-    { q: 'It ___ when we left the house.', o: ['was snowing', 'had snowed', 'snowed'], a: 0, w: 'Фон — Past Continuous.' },
+    { q: 'It ___ when we left the house.', o: ['was snowing', 'has snowed', 'snows'], a: 0, w: 'Фон — Past Continuous.' },
     { q: 'I ___ him for ten years before we got married.', o: ['had been knowing', 'had known', 'was knowing'], a: 1, w: 'Know — глагол состояния: had known.' },
     { q: 'By the time the film started, we ___ all the popcorn.', o: ['had eaten', 'had been eating', 'were eating'], a: 0, w: 'Закончено к моменту — had eaten.' },
-    { q: 'Допишите: His hands were dirty. He ___ (work) in the garden.', t: ['had been working'], w: 'He had been working in the garden.' },
-    { q: 'Допишите: They ___ (drive) for six hours when the car broke down.', t: ['had been driving'], w: 'They had been driving for six hours.' }
+    { q: 'Допишите: His hands were dirty. He ___ (work) in the garden.', t: ['had been working', "'d been working"], w: 'He had been working in the garden.' },
+    { q: 'Допишите: They ___ (drive) for six hours when the car broke down.', t: ['had been driving', "'d been driving"], w: 'They had been driving for six hours.' }
   ]
 },
 { id: 'en-quantifiers', level: 'B2', title: 'Both, either, neither, each, every', sub: 'оба, любой из двух, ни один, каждый',

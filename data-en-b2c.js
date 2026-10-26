@@ -55,7 +55,7 @@ addDecks('en', 'en-b2', 'Английский · B2', [
   ["notorious", "печально известный", "The area is notorious for crime.", "Район печально известен преступностью."],
   ["outstanding", "выдающийся; неоплаченный", "She's an outstanding student.", "Она выдающаяся студентка."],
   ["overwhelming", "подавляющий, ошеломляющий", "The response was overwhelming.", "Отклик был ошеломляющим."],
-  ["reluctant", "неохотный", "He was reluctant to help.", "Он неохотно согласился помочь."],
+  ["reluctant", "неохотный", "He was reluctant to help.", "Он не горел желанием помогать."],
   ["relevant", "относящийся к делу, актуальный", "Is this information relevant?", "Эта информация относится к делу?"],
   ["severe", "суровый, сильный, тяжёлый", "There was a severe storm last night.", "Ночью был сильный шторм."],
   ["significant", "значительный, важный", "There's been a significant increase in prices.", "Цены значительно выросли."],
@@ -64,7 +64,7 @@ addDecks('en', 'en-b2', 'Английский · B2', [
   ["tremendous", "огромный, потрясающий", "It was a tremendous success.", "Это был огромный успех."],
   ["vague", "расплывчатый, смутный", "His answer was very vague.", "Его ответ был очень расплывчатым."],
   ["vital", "жизненно важный", "Water is vital for life.", "Вода жизненно важна."],
-  ["vulnerable", "уязвимый", "Old people are vulnerable to the flu.", "Пожилые люди уязвимы к гриппу."]
+  ["vulnerable", "уязвимый", "Older people are vulnerable to the flu.", "Пожилые люди уязвимы к гриппу."]
 ]},
 
 { id: 'b2-linkers', emoji: '🧷', title: 'Связки и наречия B2', level: 'B2', reg: 'n', cards: [
@@ -82,7 +82,7 @@ addDecks('en', 'en-b2', 'Английский · B2', [
   ["owing to", "из-за, вследствие", "The match was cancelled owing to rain.", "Матч отменили из-за дождя.", "", "", "due to"],
   ["in terms of", "с точки зрения, в плане", "In terms of price, it's the best option.", "По цене это лучший вариант."],
   ["with regard to", "относительно, что касается", "With regard to your question, I'll check.", "Что касается вашего вопроса, я уточню.", "", "", "regarding"],
-  ["as opposed to", "в отличие от", "I prefer tea as opposed to coffee.", "Я предпочитаю чай, а не кофе."],
+  ["as opposed to", "в отличие от", "I prefer fresh fish, as opposed to frozen.", "Я предпочитаю свежую рыбу, а не замороженную."],
   ["even though", "хотя, даже несмотря на то что", "Even though it was cold, she didn't wear a coat.", "Хотя было холодно, она не надела пальто."],
   ["whilst", "в то время как, пока", "Whilst I understand your point, I disagree.", "Хотя я понимаю тебя, я не согласен.", "", "Британское, книжное; то же, что while.", "while"],
   ["albeit", "хотя и", "It was a success, albeit a small one.", "Это был успех, хотя и небольшой.", "", "Читается «олбú-ит»."],
@@ -136,7 +136,7 @@ addDecks('en', 'en-b2', 'Английский · B2', [
 { id: 'b2-phrasal2', emoji: '🧵', title: 'Фразовые глаголы B2 (2)', level: 'B2', reg: 'n', cards: [
   ["see through", "раскусить", "I saw through his lies.", "Я раскусил его ложь."],
   ["set back", "задержать, отбросить назад", "The injury set him back months.", "Травма отбросила его назад на месяцы."],
-  ["settle in", "освоиться, обжиться", "Have you settled in to your new flat?", "Ты обжился в новой квартире?"],
+  ["settle in", "освоиться, обжиться", "Have you settled into your new flat?", "Ты обжился в новой квартире?"],
   ["sign up", "зарегистрироваться, записаться", "I signed up for a yoga class.", "Я записалась на йогу."],
   ["single out", "выделить, выбрать", "The teacher singled him out for praise.", "Учитель особо его похвалил."],
   ["sink in", "дойти (до сознания)", "The news hasn't sunk in yet.", "Новость ещё не дошла до меня."],
@@ -175,7 +175,7 @@ addDecks('en', 'en-b2', 'Английский · B2', [
   ["go the extra mile", "сделать больше, чем требуется", "She always goes the extra mile.", "Она всегда делает больше, чем нужно."],
   ["hit the nail on the head", "попасть в точку", "You hit the nail on the head.", "Ты попал в точку."],
   ["in a nutshell", "в двух словах", "In a nutshell, we need more money.", "В двух словах: нам нужно больше денег."],
-  ["jump on the bandwagon", "примкнуть к модному течению", "Everyone is jumping on the AI bandwagon.", "Все кидаются в тренд ИИ."],
+  ["jump on the bandwagon", "примкнуть к модному течению", "Everyone is jumping on the AI bandwagon.", "Все подхватили моду на ИИ."],
   ["keep your head above water", "держаться на плаву", "We're just keeping our heads above water.", "Мы едва держимся на плаву.", "", "", "keep one's head above water"],
   ["learn the ropes", "освоиться, вникнуть", "It takes time to learn the ropes.", "Чтобы во всём разобраться, нужно время."],
   ["let sleeping dogs lie", "не будить лихо", "Don't mention it — let sleeping dogs lie.", "Не поднимай эту тему — не буди лихо."],
