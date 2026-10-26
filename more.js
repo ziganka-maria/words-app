@@ -177,7 +177,7 @@ W.renderMore = root => {
       W.audioPanel ? W.audioPanel() : null),
     h('section', { class: 'panel' }, h('h3', null, 'Сброс'),
       h('button', { class: 'btn danger', onclick: () => W.confirm('Весь прогресс по словам и урокам обнулится. Ваши колоды останутся.', 'Сбросить', () => {
-        S.prog = {}; S.days = {}; S.gram = {}; S.read = {}; S.drill = {}; S.gmist = {}; S.stamps = {}; S.act = {}; S.newToday = { d: 0 }; W.save(); W.toast('Прогресс сброшен'); W.renderTab();
+        S.prog = {}; S.days = {}; S.gram = {}; S.read = {}; S.drill = {}; S.gmist = {}; S.tmist = {}; S.stamps = {}; S.act = {}; S.newToday = { d: 0 }; W.save(); W.toast('Прогресс сброшен'); W.renderTab();
       }) }, 'Сбросить прогресс')),
     h('p', { class: 'muted small center' }, 'Живые слова · версия ' + W.VERSION));
 };

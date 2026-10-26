@@ -1,6 +1,6 @@
 /* «Живые слова» — журнальный стиль: бумага, типографская краска, красный акцент */
 :root {
-  --bg: #f3ecdf; --surface: #f8f3e9; --surface2: #ebe2d0; --tx: #1d1a16; --muted: #6f665a; --line: #cfc4b0; --rule: #1d1a16;
+  --bg: #f3ecdf; --surface: #f8f3e9; --surface2: #ebe2d0; --tx: #1d1a16; --muted: #6f665a; --line: #cfc4b0; --rule: #1d1a16; --sw-back: #1f2b4d; --sw-back2: #2e3e6b; --sw-belly: #fbf7ef; --sw-red: #c0392b;
   --accent: #b23a2b; --accent-tx: #f8f3e9; --accent-soft: #f1ddd3;
   --ink: #1d1a16; --ink-tx: #f3ecdf;
   --good: #3f6b4e; --good-soft: #dfe8d9; --bad: #b23a2b; --bad-soft: #f3dcd5; --warn: #9a6a1c; --warn-soft: #f1e5c8;
@@ -14,7 +14,7 @@
 :root[data-lang="de"] { --accent: #2e4a6b; --accent-soft: #dbe2ea; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #1a1815; --surface: #221f1b; --surface2: #2c2823; --tx: #ece4d4; --muted: #a59a88; --line: #4a4338; --rule: #ece4d4;
+    --bg: #1a1815; --surface: #221f1b; --surface2: #2c2823; --tx: #ece4d4; --muted: #a59a88; --line: #4a4338; --rule: #ece4d4; --sw-back: #3b4f86; --sw-back2: #4e66a6; --sw-belly: #f3ecdf; --sw-red: #d0503e;
     --accent: #e0725f; --accent-tx: #1a1815; --accent-soft: #3a2420; --ink: #ece4d4; --ink-tx: #1a1815;
     --good: #8fbf9c; --good-soft: #233328; --bad: #e0725f; --bad-soft: #3a2420; --warn: #d9ad62; --warn-soft: #3a3020;
     --grain: rgba(255, 255, 255, .025); color-scheme: dark;
@@ -22,7 +22,7 @@
   :root:not([data-theme="light"])[data-lang="de"] { --accent: #8fb0d6; --accent-soft: #23303d; }
 }
 :root[data-theme="dark"] {
-  --bg: #1a1815; --surface: #221f1b; --surface2: #2c2823; --tx: #ece4d4; --muted: #a59a88; --line: #4a4338; --rule: #ece4d4;
+  --bg: #1a1815; --surface: #221f1b; --surface2: #2c2823; --tx: #ece4d4; --muted: #a59a88; --line: #4a4338; --rule: #ece4d4; --sw-back: #3b4f86; --sw-back2: #4e66a6; --sw-belly: #f3ecdf; --sw-red: #d0503e;
   --accent: #e0725f; --accent-tx: #1a1815; --accent-soft: #3a2420; --ink: #ece4d4; --ink-tx: #1a1815;
   --good: #8fbf9c; --good-soft: #233328; --bad: #e0725f; --bad-soft: #3a2420; --warn: #d9ad62; --warn-soft: #3a3020;
   --grain: rgba(255, 255, 255, .025); color-scheme: dark;
@@ -64,7 +64,7 @@ nav {
 }
 nav button {
   flex: 1; max-width: 140px; background: none; border: 0; padding: 12px 4px 13px; display: flex; flex-direction: column;
-  align-items: center; gap: 4px; font: 500 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
+  align-items: center; gap: 4px; font: 500 10px/1 var(--mono); letter-spacing: .02em; text-transform: uppercase; color: var(--muted);
 }
 nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 nav button.on { color: var(--tx); }
