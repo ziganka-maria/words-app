@@ -38,7 +38,7 @@ W.drillsBlock = lang => {
     row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · напишите две формы', () => openIrregular(lang), irr.length >= 5),
     row('art-' + lang, 'Артикли a, an, the', 'выберите артикль или «без артикля»', () => openArticles(lang), (D.articles || []).length > 0),
     row('dictation-' + lang, 'Диктант на слух', 'послушайте фразу и запишите', () => openDictation(lang), dictationPool(lang).length >= 5),
-    row('speak-' + lang, 'Произношение', SR ? 'скажите слово в микрофон' : 'на этом устройстве не работает', () => openSpeak(lang), true),
+    row('speak-' + lang, 'Произношение', 'скажите слово в микрофон или запишите себя', () => openSpeak(lang), true),
     row('mist-' + lang, 'Мои ошибки', mist ? mist + ' к повторению' : 'пока пусто — и это прекрасно', () => openMistakes(lang), true));
 };
 
@@ -183,13 +183,33 @@ function openDictation(lang) {
   });
 }
 
-// ---------- произношение (распознавание речи; нужен интернет в Chrome) ----------
+// ---------- произношение ----------
+// два способа: распознавание речи (нужен интернет) и «запишите себя и сравните» (работает везде, даже без сети)
+const canRecord = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+const SR_ERRORS = {
+  'not-allowed': 'Нет доступа к микрофону. Разрешите микрофон для этого сайта в настройках браузера.',
+  'service-not-allowed': 'Телефон не дал распознавать речь. Попробуйте способ «Записать себя и сравнить».',
+  'network': 'Нужен интернет: речь распознаёт сервер браузера.',
+  'no-speech': 'Ничего не услышала. Говорите сразу после нажатия, громко и близко к телефону.',
+  'audio-capture': 'Микрофон не найден или занят другим приложением.',
+  'language-not-supported': 'Телефон не умеет распознавать этот язык. Попробуйте способ «Записать себя и сравнить».'
+};
+// запись с микрофона: вернёт адрес записи для проигрывания
+const recordClip = ms => navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => new Promise((ok, fail) => {
+  const rec = new MediaRecorder(stream), parts = [];
+  rec.ondataavailable = e => { if (e.data && e.data.size) parts.push(e.data); };
+  rec.onstop = () => { stream.getTracks().forEach(t => t.stop()); parts.length ? ok(URL.createObjectURL(new Blob(parts, { type: rec.mimeType || 'audio/mp4' }))) : fail(new Error('empty')); };
+  rec.onerror = e => { stream.getTracks().forEach(t => t.stop()); fail(e.error || e); };
+  rec.start();
+  setTimeout(() => { if (rec.state !== 'inactive') rec.stop(); }, ms);
+}));
+
 function openSpeak(lang) {
   W.push(el => {
     const s = shell(el, 'Произношение');
-    if (!SR) {
-      W.put(s.body, h('div', { class: 'summary' }, h('p', null, 'Этот браузер не умеет распознавать речь.'),
-        h('p', { class: 'muted' }, 'Попробуйте в Chrome на Android или в Safari на iPhone. Для распознавания нужен интернет.'),
+    if (!SR && !canRecord()) {
+      W.put(s.body, h('div', { class: 'summary' }, h('p', null, 'Этот браузер не даёт доступа к микрофону.'),
+        h('p', { class: 'muted' }, 'Откройте приложение в Chrome на Android или в Safari на iPhone.'),
         h('button', { class: 'btn primary', onclick: W.back }, 'Понятно')));
       return;
     }
@@ -198,6 +218,8 @@ function openSpeak(lang) {
       const lv = W.userLevel(lang) === 'A0' ? 'A1' : W.userLevel(lang);
       return learned.length >= 6 ? learned : W.allCards(lang).filter(c => (c.lv === lv || c.lv === 'live') && c.w.split(' ').length <= 2 && /^[A-Za-zäöüßÄÖÜ' -]+$/.test(c.w));
     };
+    // выбранный способ действует до конца упражнения
+    let self = !SR;
     const start = () => {
       const qs = W.shuffle(pool()).slice(0, 8);
       if (!qs.length) return W.put(s.body, h('div', { class: 'summary' }, h('p', null, 'Пока не из чего составить упражнение — сначала поучите слова.'), h('button', { class: 'btn primary', onclick: W.back }, 'Понятно')));
@@ -205,29 +227,76 @@ function openSpeak(lang) {
       const ask = () => {
         s.progress(i, qs.length);
         if (i >= qs.length) return finish(s, 'speak-' + lang, 'speak', right, qs.length, start);
-        const c = qs[i], res = h('div', { class: 'result' });
-        let tries = 0;
-        const mic = h('button', { class: 'btn primary wide', onclick: () => {
-          const r = new SR();
-          r.lang = W.LANGS[lang].tts; r.interimResults = false; r.maxAlternatives = 5;
-          W.put(mic, '… говорите'); mic.disabled = true;
-          r.onresult = e => {
-            const alts = [...e.results[0]].map(x => x.transcript);
-            const hit = alts.find(t => W.check(t, c) !== 'bad');
-            tries++;
-            res.className = 'result ' + (hit ? 'right' : 'wrong');
-            W.put(res, h('b', null, hit ? 'Отлично, понятно!' : 'Не расслышала'), h('div', null, 'Распознано: «' + alts[0] + '»'));
-            if (hit || tries >= 2) {
-              if (hit) right++;
-              W.put(acts, h('button', { class: 'btn primary wide', onclick: () => { i++; ask(); } }, 'Дальше'));
-            }
+        const c = qs[i], res = h('div', { class: 'result' }), main = h('div', { class: 'col-btns' });
+        const next = ok => { W.stopSpeak(); if (ok) right++; i++; ask(); };
+        const switcher = canRecord() && SR ? h('button', { class: 'btn ghost', onclick: () => { self = !self; ask(); } },
+          self ? 'Проверять распознаванием речи' : 'Записать себя и сравнить') : null;
+
+        // способ 1: распознавание речи
+        const recognize = () => {
+          let tries = 0;
+          const mic = h('button', { class: 'btn primary wide' }, '🎙 Сказать');
+          const fail = text => { res.className = 'result wrong'; W.put(res, h('b', null, 'Не получилось'), h('div', null, text)); };
+          mic.onclick = () => {
+            W.stopSpeak();
+            let got = false, failed = false;
+            const r = new SR();
+            r.lang = W.LANGS[lang].tts; r.interimResults = false; r.maxAlternatives = 5; r.continuous = false;
+            W.put(mic, '… говорите'); mic.disabled = true;
+            W.put(res); res.className = 'result';
+            r.onresult = e => {
+              got = true;
+              const alts = [...e.results[0]].map(x => x.transcript);
+              const hit = alts.find(t => W.check(t, c) !== 'bad');
+              tries++;
+              res.className = 'result ' + (hit ? 'right' : 'wrong');
+              W.put(res, h('b', null, hit ? 'Отлично, понятно!' : 'Не расслышала'), h('div', null, 'Распознано: «' + alts[0] + '»'));
+              if (hit || tries >= 2) W.put(main, h('button', { class: 'btn primary wide', onclick: () => next(!!hit) }, 'Дальше'));
+            };
+            r.onerror = e => { failed = true; fail(SR_ERRORS[e.error] || 'Ошибка распознавания (' + e.error + '). Попробуйте ещё раз или способ «Записать себя и сравнить».'); };
+            r.onend = () => {
+              if (!mic.isConnected) return;
+              mic.disabled = false; W.put(mic, '🎙 Сказать ещё раз');
+              if (!got && !failed) fail(SR_ERRORS['no-speech']);
+            };
+            try { r.start(); } catch (x) { mic.disabled = false; W.put(mic, '🎙 Сказать'); fail('Микрофон не запустился. Попробуйте способ «Записать себя и сравнить».'); }
           };
-          r.onerror = e => { W.put(res, h('b', null, e.error === 'not-allowed' ? 'Нет доступа к микрофону' : e.error === 'network' ? 'Нужен интернет' : 'Не получилось распознать')); res.className = 'result wrong'; };
-          r.onend = () => { mic.disabled = false; W.put(mic, '🎙 Сказать ещё раз'); };
-          try { r.start(); } catch (x) { mic.disabled = false; }
-        } }, '🎙 Сказать');
-        const acts = h('div', { class: 'col-btns' }, h('button', { class: 'btn ghost', onclick: () => { i++; ask(); } }, 'Пропустить'));
-        W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Послушайте и повторите'), h('div', { class: 'big' }, c.w), W.soundBtn(c.w, lang), h('div', { class: 'muted' }, c.t)), mic, res, acts);
+          W.put(main, mic);
+        };
+
+        // способ 2: записать себя, послушать себя и диктора, оценить самому
+        const selfCheck = () => {
+          const rec = h('button', { class: 'btn primary wide' }, '🎙 Записать (3 секунды)');
+          rec.onclick = () => {
+            W.stopSpeak();
+            rec.disabled = true; W.put(rec, '● идёт запись — говорите');
+            W.put(res); res.className = 'result';
+            recordClip(3000).then(url => {
+              if (!rec.isConnected) return;
+              rec.disabled = false; W.put(rec, '🎙 Записать ещё раз');
+              const mine = new Audio(url);
+              const playMine = h('button', { class: 'btn', onclick: () => { W.stopSpeak(); mine.currentTime = 0; mine.play().catch(() => {}); } }, '▶ Моя запись');
+              res.className = 'result close';
+              W.put(res, h('b', null, 'Сравните'), h('div', null, 'Сначала звучит ваша запись, потом диктор. Похоже?'),
+                h('div', { class: 'row-btns' }, playMine, W.soundBtn(c.w, lang)),
+                h('div', { class: 'row-btns' }, h('button', { class: 'btn', onclick: () => next(false) }, 'Ещё нет'), h('button', { class: 'btn primary', onclick: () => next(true) }, 'Похоже')));
+              mine.onended = () => { mine.onended = null; if (rec.isConnected) W.speakWait(c.w, lang); };
+              mine.play().catch(() => W.speakWait(c.w, lang));
+            }).catch(e => {
+              rec.disabled = false; W.put(rec, '🎙 Записать');
+              res.className = 'result wrong';
+              W.put(res, h('b', null, 'Не получилось'), h('div', null, e && e.name === 'NotAllowedError'
+                ? 'Нет доступа к микрофону. Разрешите микрофон для этого сайта в настройках браузера и попробуйте снова.'
+                : 'Не удалось записать звук. Закройте другие приложения, которые используют микрофон.'));
+            });
+          };
+          W.put(main, rec);
+        };
+
+        (self ? selfCheck : recognize)();
+        W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, self ? 'Послушайте, запишите себя и сравните' : 'Послушайте и повторите'),
+          h('div', { class: 'big' }, c.w), W.soundBtn(c.w, lang), h('div', { class: 'muted' }, c.t)), main, res,
+          h('div', { class: 'col-btns' }, h('button', { class: 'btn ghost', onclick: () => next(false) }, 'Пропустить'), switcher));
       };
       ask();
     };
