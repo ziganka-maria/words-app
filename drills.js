@@ -37,7 +37,7 @@ W.drillsBlock = lang => {
   const D = (window.DRILLS || {})[lang] || {}, done = W.S.drill || {};
   const irr = W.irregulars(lang), mist = W.mistakeCount(lang);
   const row = (id, title, sub, fn, ok) => ok ? h('button', { class: 'lesson', onclick: fn },
-    h('span', { class: 'l-num' + (done[id] ? ' done' : '') }, done[id] ? '✓' : '·'),
+    h('span', { class: 'l-num' + (done[id] ? ' done' : '') }, done[id] ? '✓' : '§'),
     h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title),
       h('span', { class: 'muted small' }, sub + (done[id] ? ' · лучший результат ' + done[id].best + '%' : '')))) : null;
   return h('section', null,

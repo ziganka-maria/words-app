@@ -29,6 +29,7 @@ W.renderGrammar = root => {
     h('header', { class: 'head' }, h('h1', null, 'Грамматика'), W.langSwitch()),
     h('p', { class: 'muted' }, 'Короткие уроки по порядку: правило простыми словами, примеры и проверка. Урок считается пройденным при 70% и выше.'),
     own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
+    W.drillsBlock ? W.drillsBlock(lang) : null,
     h('div', { class: 'lessons' }, kids),
     list.length ? h('p', { class: 'muted small' }, lang === 'en' ? 'Уроки B1 и выше появятся в обновлениях.' : 'Новые уроки появятся в обновлениях.') : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
 };
@@ -77,6 +78,7 @@ function quiz(el, l, num) {
     const q = l.quiz[i], why = h('div', { class: 'result' });
     const after = (ok, extra) => {
       if (ok) right++;
+      if (W.noteGrammarMistake) W.noteGrammarMistake(l.id, i, ok);
       why.className = 'result ' + (ok ? 'right' : 'wrong');
       W.put(why, h('b', null, ok ? 'Верно!' : 'Не совсем'), extra || null, h('div', null, q.w));
       body.append(h('button', { class: 'btn primary wide', onclick: () => { i++; ask(); } }, 'Дальше'));
@@ -139,6 +141,7 @@ W.renderMore = root => {
     accountPanel(),
     h('section', { class: 'panel' }, h('h3', null, 'Учёба'),
       h('label', { class: 'set-row' }, h('span', null, 'Новых слов в день'), sel('newPerDay', [[5, '5'], [10, '10'], [15, '15'], [20, '20'], [30, '30']])),
+      h('label', { class: 'set-row' }, h('span', null, 'Цель дня', h('span', { class: 'muted small block' }, 'сколько повторений в день')), sel('goal', [[10, '10'], [20, '20'], [30, '30'], [50, '50'], [100, '100']])),
       h('label', { class: 'set-row' }, h('span', null, 'Что показывать сначала'),
         sel('dir', [['fw', 'иностранное слово'], ['bw', 'русский перевод'], ['mix', 'вперемешку']])),
       h('label', { class: 'set-row' }, h('span', null, 'Голос (английский)', h('span', { class: 'muted small block' }, 'Нейросетевой; звук докачивается и потом работает без интернета')),

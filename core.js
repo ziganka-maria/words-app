@@ -264,8 +264,8 @@ W.streak = () => {
 W.smart = lang => {
   const all = W.allCards(lang), P = W.S.prog;
   return [
-    { id: 'smart:fav', smart: true, lang, emoji: '⭐', title: 'Избранное', cards: all.filter(c => W.S.fav[c.id]) },
-    { id: 'smart:hard', smart: true, lang, emoji: '🧩', title: 'Трудные', cards: all.filter(c => P[c.id] && P[c.id].bad > 0 && P[c.id].b <= 2) }
+    { id: 'smart:fav', smart: true, lang, emoji: '★', title: 'Избранное', cards: all.filter(c => W.S.fav[c.id]) },
+    { id: 'smart:hard', smart: true, lang, emoji: '✎', title: 'Трудные', cards: all.filter(c => P[c.id] && P[c.id].bad > 0 && P[c.id].b <= 2) }
   ];
 };
 

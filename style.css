@@ -339,3 +339,11 @@ textarea { resize: vertical; border: 1px solid var(--rule); }
 .gloss-w b { font: 700 24px var(--serif); }
 .gloss-t { font: italic 20px var(--text); margin: 4px 0 6px; }
 .gloss-s p { margin: 4px 0; }
+
+/* тренажёры, цель дня, диктант */
+.goal { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; }
+.goal .bar { height: 3px; }
+.dict-line .ok { color: var(--good); }
+.dict-line .miss { color: var(--bad); text-decoration: underline wavy; text-underline-offset: 3px; }
+.rate .btn.r-good { background: var(--good-soft) !important; color: var(--good) !important; border-color: var(--good) !important; }
+.lvl-head .small { font-size: inherit; }

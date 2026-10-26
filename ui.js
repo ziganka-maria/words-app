@@ -226,6 +226,7 @@ function renderDecks() {
       streak ? h('div', { class: 'streak', title: 'Дней подряд' }, 'серия', h('b', null, String(streak)), plural(streak, 'день', 'дня', 'дней').replace(/^\d+ /, '')) : null),
     h('div', { class: 'bar' }, h('i', { style: `width:${c.total ? Math.round(c.known / c.total * 100) : 0}%` })),
     h('div', { class: 'muted small' }, `Выучено ${c.known} из ${c.total} · учу ${c.learning}`),
+    W.goalLine ? W.goalLine() : null,
     h('button', { class: 'btn primary wide', onclick: () => {
       if (q.due.length + q.fresh.length) W.study('learn', [...q.due, ...q.fresh], 'Сегодня', { queued: true });
       else W.study('learn', W.shuffle(all.filter(x => W.S.prog[x.id])).slice(0, 15), 'Повторение', { queued: true, extra: true });
