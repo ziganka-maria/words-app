@@ -14,7 +14,7 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, act: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, tmist: {}, topics: {}, act: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
   set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us', goal: 20 }
 });
@@ -26,7 +26,7 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'act'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'tmist', 'topics', 'act'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
@@ -106,6 +106,12 @@ W.merge = (a, b) => {
   r.gmist = Object.assign({}, a.gmist);
   for (const k in b.gmist) r.gmist[k] = [...new Set([...(r.gmist[k] || []), ...b.gmist[k]])];
   r.act = Object.assign({}, a.act, b.act);
+  // ошибки перевода: время ошибки (> 0) или исправления (< 0) — побеждает более позднее событие
+  r.tmist = Object.assign({}, a.tmist);
+  for (const k in b.tmist || {}) if (!(k in r.tmist) || Math.abs(b.tmist[k]) > Math.abs(r.tmist[k])) r.tmist[k] = b.tmist[k];
+  // черновики топиков — самый свежий
+  r.topics = Object.assign({}, a.topics);
+  for (const k in b.topics || {}) if (!r.topics[k] || (b.topics[k].ts || 0) > (r.topics[k].ts || 0)) r.topics[k] = b.topics[k];
   r.read = {}; for (const k of new Set([...Object.keys(a.read), ...Object.keys(b.read)])) r.read[k] = best(a.read[k], b.read[k]);
   r.drill = {}; for (const k of new Set([...Object.keys(a.drill), ...Object.keys(b.drill)])) r.drill[k] = best(a.drill[k], b.drill[k]);
   r.fav = {};
@@ -379,6 +385,23 @@ W.irregulars = lang => {
     if (!seen.has(base)) { seen.add(base); out.push({ base, past: past.split('/'), pp: pp.split('/'), t }); }
   return out;
 };
+// числа цифрами («20», «3rd», «1,000») → словами: так их пишет распознавание речи и часто — пользователь
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const numWords = n => {
+  if (n < 20) return ONES[n];
+  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
+  if (n < 1000) return ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + numWords(n % 100) : '');
+  if (n < 1e6) return numWords(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? (n % 1000 < 100 ? ' and ' : ' ') + numWords(n % 1000) : '');
+  return String(n);
+};
+const ORD = { one: 'first', two: 'second', three: 'third', five: 'fifth', eight: 'eighth', nine: 'ninth', twelve: 'twelfth' };
+const ordWords = n => numWords(n).replace(/([a-z]+)$/, w => ORD[w] || (w.endsWith('y') ? w.slice(0, -1) + 'ieth' : w + 'th'));
+W.spellNumbers = t => t.replace(/(\d[\d,]*)(st|nd|rd|th)?/gi, (m, d, suf) => {
+  const n = parseInt(d.replace(/,/g, ''), 10);
+  return isNaN(n) ? m : suf ? ordWords(n) : numWords(n);
+});
+
 // фраза для озвучки трёх форм: «go, went, gone» — её записывает tools/build-audio.js
 W.irregularPhrase = v => v.base + ', ' + v.past[0] + ', ' + v.pp[0];
 

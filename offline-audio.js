@@ -11,6 +11,7 @@ W.allAudioTexts = lang => {
   for (const d of W.allDecks(lang)) for (const c of d.cards) if (d.builtin) { add(c.w); if (c.ex) add(c.ex); }
   for (const l of (window.GRAMMAR || {})[lang] || []) for (const b of l.blocks) if (b.t === 'ex') b.rows.forEach(r => add(r[0]));
   for (const t of (window.TEXTS || {})[lang] || []) t.p.flat().forEach(s => add(s[0]));
+  for (const t of (window.TOPICS || {})[lang] || []) t.model.forEach(m => add(m[0]));
   for (const v of W.irregulars(lang)) add(W.irregularPhrase(v));
   return [...set];
 };

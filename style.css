@@ -64,7 +64,7 @@ nav {
 }
 nav button {
   flex: 1; max-width: 140px; background: none; border: 0; padding: 12px 4px 13px; display: flex; flex-direction: column;
-  align-items: center; gap: 4px; font: 500 10.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  align-items: center; gap: 4px; font: 500 10px/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted);
 }
 nav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 nav button.on { color: var(--tx); }
@@ -357,3 +357,22 @@ textarea { resize: vertical; border: 1px solid var(--rule); }
 .irr-form b { font-size: 1.15em; word-break: break-word; }
 .irr-card { touch-action: pan-y; user-select: none; }
 .irr-chunks { flex-wrap: wrap; overflow: visible; }
+
+/* вкладка «Перевод» */
+.tr-ru { font-size: 1.15em; }
+.tr-in { width: 100%; min-height: 84px; resize: vertical; font: inherit; }
+.topic-in { min-height: 200px; }
+.tr-hint:empty { display: none; }
+.tr-hint { margin-top: 8px; text-transform: none; letter-spacing: 0; font: 15px/1.45 'Lora', Georgia, serif; }
+.tr-ref { font-style: italic; margin: 4px 0; color: var(--tx); }
+.tr-ref mark { background: var(--warn-soft); color: var(--tx); font-style: normal; padding: 0 2px; }
+.tr-tiles { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.tr-line { min-height: 52px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: center; }
+.tr-tile { border: 1px solid var(--rule); background: var(--surface); padding: 8px 12px; font: 16px var(--serif); color: var(--tx); }
+.tr-tile.on { background: var(--surface2); }
+.tr-tile:disabled { opacity: .25; }
+.tr-plan, .tr-phrases { margin: 8px 0 16px; padding-left: 20px; line-height: 1.5; }
+.tr-phrases li.used { text-decoration: line-through; color: var(--muted); }
+.tr-model p { line-height: 1.5; }
+.chip.on { background: var(--tx); color: var(--bg); }
+.tr-in.write-in { text-align: left; font: 17px/1.45 'Lora', Georgia, serif !important; padding: 12px; }

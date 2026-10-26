@@ -192,7 +192,7 @@ W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
 
 // ---------- вкладки ----------
 let tab = 'decks';
-const TABS = { decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
+const TABS = { decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), trans: () => W.renderTranslate($('#tab-trans')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
 W.renderTab = () => { TABS[tab](); if (W.checkStamps) setTimeout(W.checkStamps, 300); };
 W.showTab = t => {
   tab = t;

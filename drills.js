@@ -25,25 +25,9 @@ const dictationPool = lang => {
 };
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-// распознавание пишет числа цифрами: «20», «3rd», «1,000» — переводим в слова, чтобы сравнить с карточкой
-const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
-const numWords = n => {
-  if (n < 20) return ONES[n];
-  if (n < 100) return TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '');
-  if (n < 1000) return ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + numWords(n % 100) : '');
-  if (n < 1e6) return numWords(Math.floor(n / 1000)) + ' thousand' + (n % 1000 ? (n % 1000 < 100 ? ' and ' : ' ') + numWords(n % 1000) : '');
-  return String(n);
-};
-const ORD = { one: 'first', two: 'second', three: 'third', five: 'fifth', eight: 'eighth', nine: 'ninth', twelve: 'twelfth' };
-const ordWords = n => numWords(n).replace(/([a-z]+)$/, w => ORD[w] || (w.endsWith('y') ? w.slice(0, -1) + 'ieth' : w + 'th'));
-const spellNumbers = t => t.replace(/(\d[\d,]*)(st|nd|rd|th)?/gi, (m, d, suf) => {
-  const n = parseInt(d.replace(/,/g, ''), 10);
-  return isNaN(n) ? m : suf ? ordWords(n) : numWords(n);
-});
 // варианты для сравнения: как распознано, числа словами, и без дефисов (twenty one = twenty-one)
 // «100» распознаётся как цифры, а в карточке просто hundred — поэтому ещё вариант без one
-const spokenVariants = t => { const s = spellNumbers(t), n = s.replace(/\bone (hundred|thousand)\b/g, '$1'); return [...new Set([t, s, s.replace(/-/g, ' '), n])]; };
+const spokenVariants = t => { const s = W.spellNumbers(t), n = s.replace(/\bone (hundred|thousand)\b/g, '$1'); return [...new Set([t, s, s.replace(/-/g, ' '), n])]; };
 
 // ---------- список тренажёров (в разделе «Грамматика») ----------
 W.drillsBlock = lang => {
