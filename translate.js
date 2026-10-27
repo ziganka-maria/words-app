@@ -4,12 +4,13 @@
 const W = window.W, h = W.h;
 
 // ---------- банк предложений ----------
-// примеры из карточек, уроков и текстов выбранного уровня; ключ — по английскому тексту, чтобы помнить ошибки
+// свой банк предложений (BANK, к ним привязан урок грамматики), примеры из карточек, уроков и текстов;
+// ключ — по английскому тексту, чтобы помнить ошибки и что уже встречалось
 const words = s => s.trim().split(/\s+/).length;
 let bank = null;
 const buildBank = () => {
   bank = {};
-  const add = (lang, lv, en, ru, hint) => {
+  const add = (lang, lv, en, ru, hint, les) => {
     if (!en || !ru || /[а-яё]/i.test(en) || !/[а-яё]/i.test(ru)) return;
     // не для перевода: реплики с именем говорящего, два варианта через «/», прямая речь в кавычках
     if (/^[A-Z][a-z]+:/.test(en) || en.includes('/') || /[«»“”"]/.test(en)) return;
@@ -17,15 +18,21 @@ const buildBank = () => {
     if (n < 3 || n > 16) return;
     const key = lang + ':' + W.audioKey(W.speechText(en));
     const b = (bank[lang] = bank[lang] || {});
-    if (!b[key]) b[key] = { key, lang, lv, en, ru, hint, n };
+    if (!b[key]) b[key] = { key, lang, lv, en, ru, hint, n, les };
   };
+  const titles = {};
+  for (const lang of Object.keys(W.LANGS)) for (const l of (window.GRAMMAR || {})[lang] || []) titles[l.id] = l.title;
   for (const lang of Object.keys(W.LANGS)) {
+    const B = (window.BANK || {})[lang] || {};
+    for (const lv in B) for (const [en, ru, les] of B[lv]) add(lang, lv, en, ru, les && titles[les] ? 'урок: ' + titles[les] : '', les || null);
     for (const d of W.allDecks(lang)) if (d.builtin) for (const c of d.cards) if (c.ex && c.lv && c.lv !== 'live') add(lang, c.lv, c.ex, c.et, c.w + ' — ' + c.t);
-    for (const l of (window.GRAMMAR || {})[lang] || []) for (const b of l.blocks) if (b.t === 'ex') b.rows.forEach(r => add(lang, l.level, r[0], r[1], 'урок: ' + l.title));
+    for (const l of (window.GRAMMAR || {})[lang] || []) for (const b of l.blocks) if (b.t === 'ex') b.rows.forEach(r => add(lang, l.level, r[0], r[1], 'урок: ' + l.title, l.id));
     for (const t of (window.TEXTS || {})[lang] || []) for (const s of t.p.flat()) add(lang, t.level, s[0], s[1], 'текст «' + t.title + '»');
   }
 };
 const pool = (lang, lv) => { if (!bank) buildBank(); return Object.values(bank[lang] || {}).filter(x => x.lv === lv); };
+W.sentences = pool;
+W.lessonSentences = (lang, id) => { if (!bank) buildBank(); return Object.values(bank[lang] || {}).filter(x => x.les === id); };
 const byKey = key => { if (!bank) buildBank(); const lang = key.split(':')[0]; return (bank[lang] || {})[key]; };
 
 // ---------- сравнение ответа ----------
@@ -35,10 +42,14 @@ const CONTR = [[/\b(can)'t\b/g, 'cannot'], [/\bwon't\b/g, 'will not'], [/\bshan'
   [/\b(it|he|she|that|what|there|here|who|where|how|everything|nothing)'s\b/g, "$1 's"], [/\b(i|you|he|she|it|we|they|there|who)'d\b/g, "$1 'd"]];
 const AMB = { "'s": ['is', 'has'], "'d": ['would', 'had'] };
 const eq = (x, y) => x === y || (AMB[x] || []).includes(y) || (AMB[y] || []).includes(x);
+// разговорные формы и одинаковые по смыслу обороты: gonna = going to, lots of = a lot of
+const SPOKEN = [[/\bgonna\b/g, 'going to'], [/\bwanna\b/g, 'want to'], [/\bgotta\b/g, 'have to'], [/\blemme\b/g, 'let me'], [/\bgimme\b/g, 'give me'],
+  [/\blots of\b/g, 'a lot of'], [/\bhave got to\b/g, 'have to'], [/\bhas got to\b/g, 'has to']];
 // приводим к одному виду: регистр, апострофы, сокращения, числа словами, без знаков препинания
 const norm = s => {
   let t = W.spellNumbers(String(s).toLowerCase().replace(/[’‘`]/g, "'"));
   for (const [re, to] of CONTR) t = t.replace(re, to);
+  for (const [re, to] of SPOKEN) t = t.replace(re, to);
   return t.replace(/-/g, ' ').replace(/[^a-zäöüßàâçéèêëîïôûùüÿñæœ0-9' ]+/g, ' ').replace(/\s+/g, ' ').trim();
 };
 const toks = s => norm(s).split(' ').filter(Boolean);
@@ -56,18 +67,64 @@ const lcs = (a, b) => {
 };
 // опечатка в длинном слове; 'ok' от W.check тоже годится (Strasse = Straße)
 const typo = (x, y) => x.length >= 5 && y.length >= 5 && W.check(x, { w: y }) !== 'bad';
-// 'ok' | 'close' (артикль или опечатка) | 'bad'; refMiss — номера слов эталона, которых нет у пользователя
+// британское и американское написание и слова — одно и то же
+const SYN = { mom: 'mum', moms: 'mums', apartment: 'flat', apartments: 'flats', movie: 'film', movies: 'films', color: 'colour', colors: 'colours',
+  favorite: 'favourite', center: 'centre', neighbor: 'neighbour', neighbors: 'neighbours', theater: 'theatre', gray: 'grey', mommy: 'mummy',
+  vacation: 'holiday', vacations: 'holidays', elevator: 'lift', highway: 'motorway' };
+const HAVE = new Set(['have', 'has', "'s"]);
+// слова к одному виду с номерами исходных слов (чтобы подсветить пропуски в эталоне):
+// have got = have, don't have = haven't, do you have = have you, on the weekend = at the weekend
+const canon = tokens => {
+  const out = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const t = tokens[i];
+    if (t === 'got' && tokens.slice(Math.max(0, i - 3), i).some(x => HAVE.has(x))) continue;
+    if ((t === 'do' || t === 'does') && tokens.slice(i + 1, i + 5).includes('have')) {
+      const j = tokens.indexOf('have', i + 1);
+      // do not have → have not; do you have → have you (have переносим на место do)
+      out.push({ t: t === 'does' ? 'has' : 'have', i: [i, j] });
+      for (let k = i + 1; k < j; k++) out.push({ t: tokens[k], i: [k] });
+      i = j;
+      continue;
+    }
+    if (t === 'on' && tokens[i + 1] === 'the' && tokens[i + 2] === 'weekend') { out.push({ t: 'at', i: [i] }); continue; }
+    out.push({ t: SYN[t] || t, i: [i] });
+  }
+  return out;
+};
+const sameBag = (a, b) => {
+  if (a.length !== b.length) return false;
+  const left = b.slice();
+  return a.every(x => { const k = left.findIndex(y => eq(x, y)); if (k < 0) return false; left.splice(k, 1); return true; });
+};
+// близкие слова: ответ «почти верно» с пояснением
+const NEAR = [[['like', 'love'], 'Подходят оба: like — «нравится», love — сильнее, «очень люблю».'],
+  [['start', 'begin'], 'Start и begin здесь почти одно и то же.'], [['started', 'began'], 'Start и begin здесь почти одно и то же.'],
+  [['hard', 'difficult'], 'Hard и difficult здесь почти одно и то же.'], [['gift', 'present'], 'Gift и present — оба «подарок».'],
+  [['trip', 'journey'], 'Trip — поездка целиком, journey — сама дорога; часто подходят оба.'], [['must', 'have'], 'Must и have to близки: must — «сам считаю нужным», have to — «так требуют обстоятельства».']];
+const near = (a, b) => NEAR.find(([p]) => p.includes(a) && p.includes(b) && a !== b);
+// 'ok' | 'close' (артикль, опечатка, порядок слов) | 'bad'; refMiss — номера слов эталона, которых нет у пользователя
 const compare = (input, ref) => {
-  const u = toks(input), r = toks(ref);
-  if (!u.length) return { v: 'bad', refMiss: new Set(r.map((x, i) => i)) };
+  const uc = canon(toks(input)), rc = canon(toks(ref)), u = uc.map(x => x.t), r = rc.map(x => x.t);
+  const missSet = idx => new Set(idx.flatMap(i => rc[i].i));
+  if (!u.length) return { v: 'bad', refMiss: missSet(r.map((x, i) => i)) };
   const { inA, inB } = lcs(r, u);
   if (inA.size === r.length && inB.size === u.length) return { v: 'ok', refMiss: new Set() };
   const miss = r.map((x, i) => i).filter(i => !inA.has(i));
   const extra = u.filter((x, j) => !inB.has(j));
   const missW = miss.map(i => r[i]);
+  const refMiss = missSet(miss);
+  // те же слова, другой порядок: по-русски обстоятельство часто стоит в начале
+  if (sameBag(u, r)) return { v: 'close', refMiss, why: 'Слова те же, порядок другой — сравните с образцом.' };
   const onlyArts = [...missW, ...extra].every(x => ARTS.has(x));
   const oneTypo = missW.length === 1 && extra.length === 1 && typo(extra[0], missW[0]);
-  return { v: onlyArts || oneTypo ? 'close' : 'bad', refMiss: new Set(miss), why: onlyArts ? 'Проверьте артикли.' : oneTypo ? 'Опечатка: «' + extra[0] + '» → «' + missW[0] + '».' : '' };
+  // must ↔ have to: одно слово против двух (have + лишнее to)
+  const rest = (xs, w) => xs.filter(x => x !== w);
+  const mustHave = (a, b) => a.includes('must') && b.includes('have') && b.includes('to') && rest(a, 'must').length === 0 && rest(rest(b, 'have'), 'to').length === 0;
+  const pair = missW.length === 1 && extra.length === 1 ? near(missW[0], extra[0])
+    : mustHave(missW, extra) || mustHave(extra, missW) ? NEAR[NEAR.length - 1] : null;
+  return { v: onlyArts || oneTypo || pair ? 'close' : 'bad', refMiss,
+    why: onlyArts ? 'Проверьте артикли.' : oneTypo ? 'Опечатка: «' + extra[0] + '» → «' + missW[0] + '».' : pair ? pair[1] : '' };
 };
 W.translateCompare = compare;
 
@@ -103,111 +160,123 @@ const summary = (s, right, total, again, id) => {
     h('p', null, pct === 100 ? 'Без единой ошибки!' : pct >= 70 ? 'Хороший результат.' : 'Стоит повторить ещё раз.'),
     h('div', { class: 'col-btns' }, h('button', { class: 'btn', onclick: again }, 'Ещё 10'), h('button', { class: 'btn primary', onclick: W.back }, 'Готово'))));
 };
-const pick = (list, n) => W.shuffle(list).slice(0, n);
+const pick = (list, n) => W.freshFirst(list, n);
+W.noteTranslateMistake = (key, ok) => noteMistake(key, ok);
+W.openTranslateMistakes = lang => openSentences(lang, null, () => mistakes(lang));
 
-// ---------- режим 1: перевести предложение ----------
-function openSentences(lang, lv, given) {
+// ---------- задания на одно предложение (их же берёт отработка грамматики) ----------
+// t = { body, lang, q, grade(ok), next } — задание рисует себя в body, сообщает оценку и по «Дальше» вызывает next
+W.tasks = W.tasks || {};
+// «Дальше» встаёт на место только что нажатой кнопки — первые мгновения она не нажимается, чтобы двойной тап не пропустил результат
+W.nextBtn = fn => { const b = h('button', { type: 'button', class: 'btn primary wide', disabled: true, onclick: fn }, 'Дальше'); setTimeout(() => { b.disabled = false; }, 400); return b; };
+// оценка ставится один раз (t.graded), даже если нажать «Ошибся» и «Пропустить» подряд
+const scored = (t, acts) => ok => { if (t.graded) return; t.graded = true; t.grade(ok); noteMistake(t.q.key, ok); W.save(); W.put(acts, W.nextBtn(t.next)); };
+
+// перевести с русского
+W.tasks.translate = t => {
+  const { q, lang } = t, res = h('div', { class: 'result' }), acts = h('div', { class: 'col-btns' });
+  W.markSeen(q.key);
+  const inp = h('textarea', { class: 'write-in tr-in', rows: 3, placeholder: 'Перевод на ' + (lang === 'en' ? 'английский' : 'немецкий'), autocapitalize: 'sentences', autocomplete: 'off', spellcheck: 'false' });
+  let done = false, hinted = false;
+  const grade = scored(t, acts);
+  const check = () => {
+    if (done || !inp.value.trim()) return;
+    done = true; inp.readOnly = true;
+    const c = compare(inp.value, q.en);
+    if (c.v === 'ok' || c.v === 'close') {
+      res.className = 'result ' + (c.v === 'ok' ? 'right' : 'close');
+      W.put(res, h('b', null, c.v === 'ok' ? 'Верно!' : 'Почти верно'), c.why ? h('div', null, c.why) : null, refView(q.en, c.refMiss), W.soundBtn(q.en, lang));
+      grade(true);
+    } else {
+      res.className = 'result wrong';
+      W.put(res, h('b', null, 'Сравните с образцом'), h('div', { class: 'muted small' }, 'Выделены слова, которых нет в вашем ответе. Перевести можно по-разному — оцените сами.'),
+        refView(q.en, c.refMiss), W.soundBtn(q.en, lang));
+      W.put(acts, h('div', { class: 'row-btns' },
+        h('button', { class: 'btn', onclick: () => grade(false) }, 'Ошибся'),
+        h('button', { class: 'btn primary', onclick: () => grade(true) }, 'Мой вариант тоже верный')));
+    }
+  };
+  const hintBox = h('div', { class: 'muted small tr-hint' });
+  const hintBtn = h('button', { class: 'btn ghost', onclick: () => {
+    if (hinted) return; hinted = true;
+    // подсказка: первые буквы слов и откуда предложение
+    W.put(hintBox, h('div', null, q.en.split(/\s+/).map(w => w.replace(/^([^A-Za-zÄÖÜäöüß]*[A-Za-zÄÖÜäöüß])[A-Za-zÄÖÜäöüß'’]*/, '$1…')).join(' ')), h('div', null, q.hint || ''));
+  } }, 'Подсказка');
+  W.put(t.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, t.label || 'Переведите на ' + (lang === 'en' ? 'английский' : 'немецкий')), h('div', { class: 'q tr-ru' }, q.ru), hintBox),
+    inp, h('div', { class: 'w-actions' }, h('button', { class: 'btn primary wide', onclick: check }, 'Проверить')), res, acts,
+    h('div', { class: 'col-btns' }, hintBtn, h('button', { class: 'btn ghost', onclick: () => { done = true; if (!t.graded) { t.graded = true; t.grade(false); noteMistake(q.key, false); } W.save(); t.next(); } }, 'Пропустить')));
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); check(); } });
+  setTimeout(() => inp.focus(), 60);
+};
+
+// собрать перевод из плашек; others — откуда брать лишние слова
+W.tasks.tiles = t => {
+  const { q, lang } = t, others = t.others || pool(lang, q.lv);
+  W.markSeen(q.key);
+  // плашки: слова предложения без знаков препинания + два лишних слова из других предложений
+  const clean = w => w.replace(/^[^\wÄÖÜäöüß']+|[^\wÄÖÜäöüß']+$/g, '');
+  const raw = q.en.split(/\s+/);
+  // заглавная буква подсказала бы начало предложения — в английском её убираем (кроме I), и у второго предложения тоже;
+  // в немецком существительные с заглавной, их не трогаем
+  const own = raw.map((w, k) => {
+    const c = clean(w), start = k === 0 || /[.!?]$/.test(raw[k - 1]);
+    return lang === 'en' && start && c && c !== 'I' && !/^I'/.test(c) ? c[0].toLowerCase() + c.slice(1) : c;
+  }).filter(Boolean);
+  const ownSet = new Set(own.map(w => w.toLowerCase()));
+  const extra = [];
+  // лишние слова — из середины других предложений и без заглавных, чтобы не выделялись
+  for (const o of W.shuffle(others).slice(0, 40)) { for (const w of o.en.split(/\s+/).slice(1).map(clean)) if (w && w === w.toLowerCase() && !ownSet.has(w) && !extra.includes(w) && extra.length < 2) extra.push(w); if (extra.length >= 2) break; }
+  const tiles = W.shuffle([...own, ...extra]).map((w, k) => ({ w, k }));
+  const chosen = [];
+  const line = h('div', { class: 'tr-tiles tr-line' }), bankEl = h('div', { class: 'tr-tiles' }), res = h('div', { class: 'result' }), acts = h('div', { class: 'col-btns' });
+  let done = false;
+  const draw = () => {
+    W.put(line, chosen.length ? chosen.map(x => h('button', { class: 'tr-tile on', onclick: () => { if (done) return; chosen.splice(chosen.indexOf(x), 1); draw(); } }, x.w)) : h('span', { class: 'muted small' }, 'Нажимайте на слова по порядку'));
+    W.put(bankEl, tiles.map(x => h('button', { class: 'tr-tile', disabled: chosen.includes(x) || done, onclick: () => { chosen.push(x); draw(); } }, x.w)));
+  };
+  const grade = scored(t, acts);
+  const check = () => {
+    if (done || !chosen.length) return;
+    done = true; draw();
+    const said = chosen.map(x => x.w).join(' ');
+    // please в начале или в конце — оба порядка верны
+    const flat = x => toks(x).filter(w => w !== 'please').join(' ');
+    const ok = toks(said).join(' ') === toks(q.en).join(' ') || (toks(q.en).includes('please') && flat(said) === flat(q.en));
+    res.className = 'result ' + (ok ? 'right' : 'wrong');
+    W.put(res, h('b', null, ok ? 'Верно!' : 'Не совсем'), h('div', { class: 'tr-ref' }, q.en), W.soundBtn(q.en, lang));
+    if (ok) grade(true);
+    else W.put(acts, h('div', { class: 'row-btns' }, h('button', { class: 'btn', onclick: () => { grade(false); t.next(); } }, 'Дальше'), h('button', { class: 'btn ghost', onclick: () => grade(true) }, 'Мой порядок тоже верный')));
+  };
+  draw();
+  W.put(t.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, t.label || 'Соберите перевод'), h('div', { class: 'q tr-ru' }, q.ru)),
+    line, bankEl, h('div', { class: 'w-actions' }, h('button', { class: 'btn primary wide', onclick: check }, 'Проверить')), res, acts,
+    h('div', { class: 'col-btns' }, h('button', { class: 'btn ghost', onclick: () => { if (done) return; chosen.length = 0; draw(); } }, 'Сбросить')));
+};
+// какие задания подходят предложению: длинное в плашки не годится, диктант — только со звуком и без цифр (год на слух пишут словами)
+W.tasks.kinds = q => ['translate'].concat(q.n <= 10 ? ['tiles'] : [], q.n <= 12 && W.S.set.sound && !/[-—–0-9]/.test(q.en) ? ['listen'] : []);
+
+// ---------- режимы вкладки: 10 заданий одного вида ----------
+function openRun(lang, kind, title, list, id) {
   W.push(el => {
-    const s = shell(el, given ? 'Ошибки перевода' : 'Перевод · ' + lv);
+    const s = shell(el, title);
     const start = () => {
-      const qs = given ? pick(given(), 10) : pick(pool(lang, lv).filter(x => x.n <= 14), 10);
+      const qs = list();
       if (!qs.length) return W.put(s.body, h('p', { class: 'muted empty' }, 'Для этого уровня пока нет предложений.'));
       let i = 0, right = 0;
       const ask = () => {
         s.progress(i, qs.length);
-        if (i >= qs.length) return summary(s, right, qs.length, start, 'tr-sent-' + lang);
-        const q = qs[i], res = h('div', { class: 'result' }), acts = h('div', { class: 'col-btns' });
-        const inp = h('textarea', { class: 'write-in tr-in', rows: 3, placeholder: 'Перевод на ' + (lang === 'en' ? 'английский' : 'немецкий'), autocapitalize: 'sentences', autocomplete: 'off', spellcheck: 'false' });
-        let done = false, hinted = false;
-        const next = () => { i++; ask(); };
-        const grade = ok => { if (ok) right++; noteMistake(q.key, ok); W.save(); W.put(acts, h('button', { class: 'btn primary wide', onclick: next }, 'Дальше')); };
-        const check = () => {
-          if (done || !inp.value.trim()) return;
-          done = true; inp.readOnly = true;
-          const c = compare(inp.value, q.en);
-          if (c.v === 'ok' || c.v === 'close') {
-            res.className = 'result ' + (c.v === 'ok' ? 'right' : 'close');
-            W.put(res, h('b', null, c.v === 'ok' ? 'Верно!' : 'Почти верно'), c.why ? h('div', null, c.why) : null, refView(q.en, c.refMiss), W.soundBtn(q.en, lang));
-            grade(true);
-          } else {
-            res.className = 'result wrong';
-            W.put(res, h('b', null, 'Сравните с образцом'), h('div', { class: 'muted small' }, 'Выделены слова, которых нет в вашем ответе. Перевести можно по-разному — оцените сами.'),
-              refView(q.en, c.refMiss), W.soundBtn(q.en, lang));
-            W.put(acts, h('div', { class: 'row-btns' },
-              h('button', { class: 'btn', onclick: () => grade(false) }, 'Ошибся'),
-              h('button', { class: 'btn primary', onclick: () => grade(true) }, 'Мой вариант тоже верный')));
-          }
-        };
-        const hintBox = h('div', { class: 'muted small tr-hint' });
-        const hintBtn = h('button', { class: 'btn ghost', onclick: () => {
-          if (hinted) return; hinted = true;
-          // подсказка: первые буквы слов и откуда предложение
-          W.put(hintBox, h('div', null, q.en.split(/\s+/).map(w => w.replace(/^([^A-Za-zÄÖÜäöüß]*[A-Za-zÄÖÜäöüß])[A-Za-zÄÖÜäöüß'’]*/, '$1…')).join(' ')), h('div', null, q.hint || ''));
-        } }, 'Подсказка');
-        W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Переведите на ' + (lang === 'en' ? 'английский' : 'немецкий')), h('div', { class: 'q tr-ru' }, q.ru), hintBox),
-          inp, h('div', { class: 'w-actions' }, h('button', { class: 'btn primary wide', onclick: check }, 'Проверить')), res, acts,
-          h('div', { class: 'col-btns' }, hintBtn, h('button', { class: 'btn ghost', onclick: () => { if (!done) noteMistake(q.key, false); W.save(); next(); } }, 'Пропустить')));
-        inp.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); check(); } });
-        setTimeout(() => inp.focus(), 60);
+        if (i >= qs.length) return summary(s, right, qs.length, start, id);
+        W.tasks[kind]({ body: s.body, lang, q: qs[i], grade: ok => { if (ok) right++; }, next: () => { i++; ask(); } });
       };
       ask();
     };
     start();
   });
 }
-
-// ---------- режим 2: собрать из слов ----------
-function openTiles(lang, lv) {
-  W.push(el => {
-    const s = shell(el, 'Собрать из слов · ' + lv);
-    const start = () => {
-      const all = pool(lang, lv).filter(x => x.n >= 3 && x.n <= 10);
-      const qs = pick(all, 10);
-      if (!qs.length) return W.put(s.body, h('p', { class: 'muted empty' }, 'Для этого уровня пока нет предложений.'));
-      let i = 0, right = 0;
-      const ask = () => {
-        s.progress(i, qs.length);
-        if (i >= qs.length) return summary(s, right, qs.length, start, 'tr-tiles-' + lang);
-        const q = qs[i];
-        // плашки: слова предложения без знаков препинания + два лишних слова из других предложений
-        const clean = w => w.replace(/^[^\wÄÖÜäöüß']+|[^\wÄÖÜäöüß']+$/g, '');
-        const own = q.en.split(/\s+/).map(clean).filter(Boolean);
-        // заглавная буква подсказала бы первое слово — в английском её убираем (кроме I); в немецком существительные с заглавной, их не трогаем
-        if (lang === 'en' && own[0] && own[0] !== 'I' && !/^I'/.test(own[0])) own[0] = own[0][0].toLowerCase() + own[0].slice(1);
-        const ownSet = new Set(own.map(w => w.toLowerCase()));
-        const extra = [];
-        // лишние слова — из середины других предложений и без заглавных, чтобы не выделялись
-        for (const o of W.shuffle(all)) { for (const w of o.en.split(/\s+/).slice(1).map(clean)) if (w && w === w.toLowerCase() && !ownSet.has(w) && !extra.includes(w) && extra.length < 2) extra.push(w); if (extra.length >= 2) break; }
-        const tiles = W.shuffle([...own, ...extra]).map((w, k) => ({ w, k }));
-        const chosen = [];
-        const line = h('div', { class: 'tr-tiles tr-line' }), bankEl = h('div', { class: 'tr-tiles' }), res = h('div', { class: 'result' }), acts = h('div', { class: 'col-btns' });
-        let done = false;
-        const draw = () => {
-          W.put(line, chosen.length ? chosen.map(t => h('button', { class: 'tr-tile on', onclick: () => { if (done) return; chosen.splice(chosen.indexOf(t), 1); draw(); } }, t.w)) : h('span', { class: 'muted small' }, 'Нажимайте на слова по порядку'));
-          W.put(bankEl, tiles.map(t => h('button', { class: 'tr-tile', disabled: chosen.includes(t) || done, onclick: () => { chosen.push(t); draw(); } }, t.w)));
-        };
-        const next = () => { i++; ask(); };
-        const grade = ok => { if (ok) right++; noteMistake(q.key, ok); W.save(); W.put(acts, h('button', { class: 'btn primary wide', onclick: next }, 'Дальше')); };
-        const check = () => {
-          if (done || !chosen.length) return;
-          done = true; draw();
-          const said = chosen.map(t => t.w).join(' ');
-          const ok = toks(said).join(' ') === toks(q.en).join(' ');
-          res.className = 'result ' + (ok ? 'right' : 'wrong');
-          W.put(res, h('b', null, ok ? 'Верно!' : 'Не совсем'), h('div', { class: 'tr-ref' }, q.en), W.soundBtn(q.en, lang));
-          if (ok) grade(true);
-          else W.put(acts, h('div', { class: 'row-btns' }, h('button', { class: 'btn', onclick: () => { grade(false); next(); } }, 'Дальше'), h('button', { class: 'btn ghost', onclick: () => grade(true) }, 'Мой порядок тоже верный')));
-        };
-        draw();
-        W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Соберите перевод'), h('div', { class: 'q tr-ru' }, q.ru)),
-          line, bankEl, h('div', { class: 'w-actions' }, h('button', { class: 'btn primary wide', onclick: check }, 'Проверить')), res, acts,
-          h('div', { class: 'col-btns' }, h('button', { class: 'btn ghost', onclick: () => { chosen.length = 0; draw(); } }, 'Сбросить')));
-      };
-      ask();
-    };
-    start();
-  });
-}
+const openSentences = (lang, lv, given) => openRun(lang, 'translate', given ? 'Ошибки в предложениях' : 'Перевод · ' + lv,
+  () => given ? pick(given(), 10) : pick(pool(lang, lv).filter(x => x.n <= 14), 10), 'tr-sent-' + lang);
+const openTiles = (lang, lv) => openRun(lang, 'tiles', 'Собрать из слов · ' + lv, () => pick(pool(lang, lv).filter(x => x.n >= 3 && x.n <= 10), 10), 'tr-tiles-' + lang);
+const openListen = (lang, lv) => openRun(lang, 'listen', 'На слух · ' + lv, () => pick(pool(lang, lv).filter(x => W.tasks.kinds(x).includes('listen')), 10), 'tr-listen-' + lang);
 
 // ---------- режим 3: топики ----------
 function openTopic(t, lang) {
@@ -280,18 +349,21 @@ W.renderTranslate = root => {
   const levels = W.LEVELS.filter(l => pool(lang, l).length >= 10);
   const L = levels.includes(lv) ? lv : levels[0];
   const topics = ((window.TOPICS || {})[lang] || []).filter(t => t.level === L);
-  const mist = mistakes(lang);
+  const mist = mistakes(lang), seen = W.S.seen || {};
+  const fresh = L ? pool(lang, L).filter(x => !seen[x.key]).length : 0;
   const card = (emoji, title, sub, fn) => h('button', { class: 'lesson', onclick: fn },
     h('span', { class: 'l-num', 'aria-hidden': 'true' }, emoji), h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title), h('span', { class: 'muted small' }, sub)));
   W.put(root,
     h('header', { class: 'head' }, W.practiceSwitch('trans'), h('h1', null, 'Перевод'), W.langSwitch()),
-    h('p', { class: 'muted' }, 'Переводите с русского: предложения, сборка из слов и короткие тексты на тему.'),
+    h('p', { class: 'muted' }, 'Переводите с русского, собирайте из слов, пишите на слух и сочиняйте короткие тексты на тему.'),
     levels.length ? h('div', { class: 'chips' }, levels.map(l => h('button', { class: 'chip' + (l === L ? ' on' : ''), 'aria-pressed': l === L ? 'true' : 'false', onclick: () => { curLv = l; W.renderTab(); } }, l))) : null,
     !levels.length ? h('p', { class: 'muted empty' }, 'Для этого языка задания пока готовятся.') : h('section', null,
       h('div', { class: 'lvl-head' }, 'Задания · ' + (W.levelInfo[L] || L)),
+      fresh ? h('p', { class: 'muted small' }, 'Предложений уровня ' + L + ', которые вам ещё не встречались: ' + fresh + '. Они идут первыми.') : null,
       card('✍', 'Перевести предложение', '10 предложений · пишете перевод сами', () => openSentences(lang, L)),
       card('▦', 'Собрать из слов', '10 предложений · складываете из плашек', () => openTiles(lang, L)),
-      mist.length ? card('!', 'Ошибки перевода', mist.length + ' к повторению', () => openSentences(lang, L, () => mistakes(lang))) : null),
+      W.S.set.sound ? card('♪', 'На слух', '10 предложений · слушаете и записываете', () => openListen(lang, L)) : null,
+      mist.length ? card('!', 'Ошибки в предложениях', mist.length + ' к повторению · как перевод с русского', () => openSentences(lang, L, () => mistakes(lang))) : null),
     topics.length ? h('section', null,
       h('div', { class: 'lvl-head' }, 'Топики · ' + L),
       ...topics.map(t => { const d = (W.S.topics || {})[t.id]; return card(d && d.done ? '✓' : '¶', t.title, d && d.done ? 'написано · можно переписать' : d && d.text ? 'черновик сохранён' : t.len + ' · ' + t.plan.length + ' пункта плана', () => openTopic(t, lang)); })) : null);

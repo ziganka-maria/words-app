@@ -14,7 +14,7 @@ const ctx = { console, addEventListener() {}, localStorage: { getItem: () => nul
 ctx.window = ctx; vm.createContext(ctx);
 // только то, что подключено в index.html, и в том же порядке (неподключённые черновики не озвучиваем)
 const scripts = [...fs.readFileSync(path.join(APP, 'index.html'), 'utf8').matchAll(/<script src="([^"]+)"/g)].map(m => m[1]);
-for (const f of scripts.filter(f => /^(data|grammar|texts|topics)-.*\.js$/.test(f)).concat('core.js'))
+for (const f of scripts.filter(f => /^(data|grammar|texts|topics|bank)-.*\.js$/.test(f)).concat('core.js'))
   vm.runInContext(fs.readFileSync(path.join(APP, f), 'utf8'), ctx, { filename: f });
 const W = ctx.W; W.prepare();
 
@@ -23,6 +23,8 @@ for (const d of W.allDecks('en')) for (const c of d.cards) { texts.add(W.speechT
 for (const l of (ctx.GRAMMAR || {}).en || []) for (const b of l.blocks) if (b.t === 'ex') for (const r of b.rows) texts.add(W.speechText(r[0]));
 for (const t of W.audioExtra ? W.audioExtra('en') : []) texts.add(W.speechText(t));
 for (const t of (ctx.TEXTS || {}).en || []) for (const s of t.p.flat()) texts.add(W.speechText(s[0]));
+// банк предложений для перевода и отработки
+for (const lv in ((ctx.BANK || {}).en || {})) for (const s of ctx.BANK.en[lv]) texts.add(W.speechText(s[0]));
 // образцы топиков
 for (const t of (ctx.TOPICS || {}).en || []) for (const m of t.model) texts.add(W.speechText(m[0]));
 // три формы неправильных глаголов для тренажёра

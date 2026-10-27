@@ -1,7 +1,7 @@
 'use strict';
 (function () {
 const W = window.W;
-W.VERSION = '0.5';
+W.VERSION = '0.6';
 W.prepare();
 // вошедший пользователь — сразу открываем его данные
 if (W.acc) W.acc.boot();

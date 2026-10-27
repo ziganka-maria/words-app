@@ -14,7 +14,7 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, tmist: {}, topics: {}, act: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, tmist: {}, topics: {}, act: {}, seen: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
   set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us', goal: 20 }
 });
@@ -26,7 +26,7 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'tmist', 'topics', 'act'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'tmist', 'topics', 'act', 'seen'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
@@ -92,7 +92,12 @@ W.merge = (a, b) => {
   r.gram = Object.assign({}, a.gram);
   for (const k in b.gram) {
     const x = r.gram[k], y = b.gram[k];
-    r.gram[k] = !x ? y : { done: !!(x.done || y.done), best: Math.max(x.best || 0, y.best || 0) };
+    // расписание повтора урока — более свежее
+    if (!x || !y) { r.gram[k] = x || y; continue; }
+    // при равном времени правки (обе копии после переноса) — более ранний срок, чтобы копии сходились
+    const later = (p, q) => (p.t || 0) > (q.t || 0) || ((p.t || 0) === (q.t || 0) && p.due < q.due);
+    const rv = !x.rv ? y.rv : !y.rv ? x.rv : later(y.rv, x.rv) ? y.rv : x.rv;
+    r.gram[k] = Object.assign({ done: !!(x.done || y.done), best: Math.max(x.best || 0, y.best || 0) }, rv ? { rv } : null);
   }
   // результат теста уровня — самый свежий
   r.level = Object.assign({}, a.level);
@@ -106,6 +111,9 @@ W.merge = (a, b) => {
   r.gmist = Object.assign({}, a.gmist);
   for (const k in b.gmist) r.gmist[k] = [...new Set([...(r.gmist[k] || []), ...b.gmist[k]])];
   r.act = Object.assign({}, a.act, b.act);
+  // когда последний раз встречалось предложение или вопрос — более позднее
+  r.seen = Object.assign({}, a.seen);
+  for (const k in b.seen || {}) r.seen[k] = Math.max(r.seen[k] || 0, b.seen[k]);
   // ошибки перевода: время ошибки (> 0) или исправления (< 0) — побеждает более позднее событие
   r.tmist = Object.assign({}, a.tmist);
   for (const k in b.tmist || {}) if (!(k in r.tmist) || Math.abs(b.tmist[k]) > Math.abs(r.tmist[k])) r.tmist[k] = b.tmist[k];
@@ -370,6 +378,12 @@ W.newDeck = (lang, title, folder) => {
 };
 W.newCard = (lang, f) => Object.assign({ id: W.uid('c'), lang, w: '', t: '', ex: '', et: '', r: 'n', n: '' }, f);
 
+// сначала то, что ещё не встречалось, потом давно не встречавшееся (ключи — в S.seen)
+W.freshFirst = (list, n, key = x => x.key) => {
+  const seen = W.S.seen || {};
+  return W.shuffle(list).map(x => [x, seen[key(x)] || 0]).sort((a, b) => a[1] - b[1]).slice(0, n).map(x => x[0]);
+};
+W.markSeen = k => { (W.S.seen = W.S.seen || {})[k] = Date.now(); };
 W.shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 // три формы из заметок карточек: «Go — went — gone.»
 W.irregulars = lang => {

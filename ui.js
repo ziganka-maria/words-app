@@ -261,6 +261,7 @@ function renderHome() {
   const lessons = ((window.GRAMMAR || {})[lang] || []), texts = ((window.TEXTS || {})[lang] || []);
   const read = Object.keys(W.S.read || {}).filter(id => texts.some(t => t.id === id)).length;
   const passed = lessons.filter(l => W.S.gram[l.id] && W.S.gram[l.id].done).length;
+  const due = W.gramDue ? W.gramDue(lang) : [];
   const rubric = (icon, title, sub, fn) => h('button', { class: 'lesson rubric', onclick: fn },
     h('span', { class: 'l-num' }, W.icon(icon)),
     h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title), h('span', { class: 'muted small' }, sub)));
@@ -279,6 +280,7 @@ function renderHome() {
       h('h1', null, h('span', { html: 'Живые<br>слова' }), W.emblem()),
       W.langSwitch()),
     iosWarn(), accNote, W.levelCard ? W.levelCard() : null, todayBlock(lang, all),
+    due.length ? h('div', { class: 'lessons' }, W.dueCard(lang, due)) : null,
     h('div', { class: 'lvl-head' }, 'Разделы'),
     h('div', { class: 'lessons' },
       rubric('words', 'Слова', W.words(c.total) + ' с примерами и озвучкой' + (c.known ? ' · выучено ' + c.known : ''), () => W.showTab('decks')),

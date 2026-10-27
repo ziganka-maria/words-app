@@ -14,14 +14,17 @@ W.drillDone = (id, kind, pct) => {
 
 // ---------- данные для тренажёров ----------
 // W.irregulars и W.irregularPhrase — в core.js (их же использует озвучка)
-// предложения для диктанта: примеры из колод своего уровня и предложения из текстов (до 12 слов)
+// предложения для диктанта: банк предложений своего уровня (примеры из колод, уроков, текстов и новые), до 12 слов
+// без дефисов и тире: иначе подсветка верных слов съезжает
 const dictationPool = lang => {
   const lv = W.userLevel(lang) === 'A0' ? 'A1' : W.userLevel(lang);
+  const ok = x => x.en.split(' ').length >= 3 && x.en.split(' ').length <= 12 && !/[-—–0-9]/.test(x.en);
+  const bank = (W.sentences ? W.sentences(lang, lv) : []).filter(ok);
+  if (bank.length >= 5) return bank;
+  // у немецкого пока только карточки «живого языка» — берём их примеры и тексты, как раньше
   const fromCards = W.allCards(lang).filter(c => c.ex && (c.lv === lv || c.lv === 'live')).map(c => ({ en: c.ex, ru: c.et }));
-  const fromTexts = ((window.TEXTS || {})[lang] || []).filter(t => t.level === lv || (lv === 'A1' && t.level === 'A1'))
-    .flatMap(t => t.p.flat()).filter(s => s[0].split(' ').length <= 12 && !/[«»:]/.test(s[0])).map(s => ({ en: s[0], ru: s[1] }));
-  // без дефисов и тире: иначе подсветка верных слов съезжает
-  return fromCards.concat(fromTexts).filter(x => x.en.split(' ').length >= 3 && !/[-—–]/.test(x.en));
+  const fromTexts = ((window.TEXTS || {})[lang] || []).filter(t => t.level === lv).flatMap(t => t.p.flat()).filter(s => !/[«»:]/.test(s[0])).map(s => ({ en: s[0], ru: s[1] }));
+  return fromCards.concat(fromTexts).filter(ok);
 };
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -41,7 +44,7 @@ W.drillsBlock = lang => {
     h('div', { class: 'lvl-head' }, 'Тренажёры'),
     row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · листайте формы и проверяйте себя', () => openIrregular(lang), irr.length >= 5),
     row('art-' + lang, 'Артикли a, an, the', 'выберите артикль или «без артикля»', () => openArticles(lang), (D.articles || []).length > 0),
-    row('dictation-' + lang, 'Диктант на слух', 'послушайте фразу и запишите', () => openDictation(lang), dictationPool(lang).length >= 5),
+    row('dictation-' + lang, 'Диктант на слух', 'послушайте фразу и запишите', () => openDictation(lang), W.S.set.sound && dictationPool(lang).length >= 5),
     row('speak-' + lang, 'Произношение', 'скажите слово в микрофон или запишите себя', () => openSpeak(lang), true),
     row('mist-' + lang, 'Мои ошибки', mist ? mist + ' к повторению' : 'пока пусто — и это прекрасно', () => openMistakes(lang), true));
 };
@@ -190,40 +193,49 @@ const wordDiff = (typed, target) => {
   for (const w of a) { const k = b.findIndex((x, i) => i >= j && x === w && !m[i]); if (k >= 0) { m[k] = true; j = k + 1; } }
   return { ok: m.filter(Boolean).length, total: b.length, marks: m };
 };
+// диктант на одно предложение — t = { body, lang, q, grade(ok), next }, как в W.tasks из translate.js
+W.tasks = W.tasks || {};
+W.tasks.listen = t => {
+  const { q, lang } = t, res = h('div', { class: 'result' });
+  if (q.key) W.markSeen(q.key);
+  const input = h('textarea', { rows: 2, class: 'write-in', placeholder: 'напишите, что услышали', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
+  let done = false;
+  const play = () => W.speak(q.en, lang);
+  const form = h('form', { class: 'write', onsubmit: e => {
+    e.preventDefault();
+    if (done) return;
+    if (!input.value.trim()) return;
+    done = true; input.readOnly = true;
+    // I'm = I am и прочие сокращения — через сравнение из «Перевода»
+    const d = wordDiff(input.value, q.en), ok = d.ok === d.total || (!!W.translateCompare && W.translateCompare(input.value, q.en).v === 'ok');
+    t.grade(ok);
+    if (q.key && W.noteTranslateMistake) W.noteTranslateMistake(q.key, ok);
+    W.save();
+    const words = q.en.split(' ');
+    res.className = 'result ' + (ok ? 'right' : d.ok / d.total >= 0.7 ? 'close' : 'wrong');
+    W.put(res, h('b', null, ok ? 'Верно' : 'Верных слов: ' + d.ok + ' из ' + d.total),
+      h('div', { class: 'dict-line' }, words.map((w, k) => h('span', { class: d.marks[k] ? 'ok' : 'miss' }, w + ' '))),
+      h('div', { class: 'muted' }, q.ru));
+    W.put(acts, W.nextBtn(t.next));
+  } },
+    h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, t.label || 'Нажмите, чтобы послушать. Можно несколько раз'),
+      h('button', { type: 'button', class: 'btn primary', onclick: play }, '▶ Слушать')),
+    input);
+  const acts = h('div', { class: 'w-actions' }, h('button', { type: 'button', class: 'btn ghost', onclick: play }, 'Ещё раз'), h('button', { type: 'submit', class: 'btn primary' }, 'Проверить'));
+  form.append(acts, res);
+  W.put(t.body, form);
+  setTimeout(() => { if (t.body.isConnected) play(); }, 300);
+};
 function openDictation(lang) {
   W.push(el => {
     const s = shell(el, 'Диктант');
     const start = () => {
-      const qs = W.shuffle(dictationPool(lang)).slice(0, 8);
+      const qs = W.freshFirst(dictationPool(lang), 8);
       let i = 0, right = 0;
       const ask = () => {
         s.progress(i, qs.length);
         if (i >= qs.length) return finish(s, 'dictation-' + lang, 'dictation', right, qs.length, start);
-        const q = qs[i], res = h('div', { class: 'result' });
-        const input = h('textarea', { rows: 2, class: 'write-in', placeholder: 'напишите, что услышали', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
-        let done = false;
-        const play = () => W.speak(q.en, lang);
-        const form = h('form', { class: 'write', onsubmit: e => {
-          e.preventDefault();
-          if (done) { i++; return ask(); }
-          if (!input.value.trim()) return;
-          done = true; input.readOnly = true;
-          const d = wordDiff(input.value, q.en), ok = d.ok === d.total;
-          if (ok) right++;
-          const words = q.en.split(' ');
-          res.className = 'result ' + (ok ? 'right' : d.ok / d.total >= 0.7 ? 'close' : 'wrong');
-          W.put(res, h('b', null, ok ? 'Верно' : 'Верных слов: ' + d.ok + ' из ' + d.total),
-            h('div', { class: 'dict-line' }, words.map((w, k) => h('span', { class: d.marks[k] ? 'ok' : 'miss' }, w + ' '))),
-            h('div', { class: 'muted' }, q.ru));
-          W.put(acts, h('button', { type: 'submit', class: 'btn primary wide' }, 'Дальше'));
-        } },
-          h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, 'Нажмите, чтобы послушать. Можно несколько раз'),
-            h('button', { type: 'button', class: 'btn primary', onclick: play }, '▶ Слушать')),
-          input);
-        const acts = h('div', { class: 'w-actions' }, h('button', { type: 'button', class: 'btn ghost', onclick: () => W.speakSlow ? W.speakSlow(q.en, lang) : play() }, 'Ещё раз'), h('button', { type: 'submit', class: 'btn primary' }, 'Проверить'));
-        form.append(acts, res);
-        W.put(s.body, form);
-        setTimeout(() => { if (el.isConnected) play(); }, 300);
+        W.tasks.listen({ body: s.body, lang, q: qs[i], grade: ok => { if (ok) right++; }, next: () => { i++; ask(); } });
       };
       ask();
     };
@@ -373,7 +385,7 @@ function openSpeak(lang) {
 }
 
 // ---------- «Мои ошибки» ----------
-// ошибки в вопросах грамматики хранятся как S.gmist[урок] = [номера вопросов]
+// ошибки в вопросах грамматики хранятся как S.gmist[урок] = [номера вопросов] (числа — проверка урока, 'dN' — отработка)
 W.noteGrammarMistake = (lessonId, qi, ok) => {
   const S = W.S; S.gmist = S.gmist || {};
   const list = new Set(S.gmist[lessonId] || []);
@@ -382,23 +394,27 @@ W.noteGrammarMistake = (lessonId, qi, ok) => {
 };
 const grammarMistakes = lang => {
   const out = [];
-  for (const l of (window.GRAMMAR || {})[lang] || []) for (const qi of ((W.S.gmist || {})[l.id] || [])) if (l.quiz[qi]) out.push({ l, qi, q: l.quiz[qi] });
+  for (const l of (window.GRAMMAR || {})[lang] || []) for (const qi of ((W.S.gmist || {})[l.id] || [])) { const q = W.gramQ(l, qi); if (q) out.push({ l, qi, q }); }
   return out;
 };
 const hardWords = lang => (W.smart(lang).find(d => d.id === 'smart:hard') || { cards: [] }).cards;
-W.mistakeCount = lang => grammarMistakes(lang).length + hardWords(lang).length;
+const trMist = lang => W.translateMistakeCount ? W.translateMistakeCount(lang) : 0;
+W.mistakeCount = lang => grammarMistakes(lang).length + hardWords(lang).length + trMist(lang);
 
 function openMistakes(lang) {
   W.push(el => {
     const render = () => {
-      const g = grammarMistakes(lang), w = hardWords(lang);
+      const g = grammarMistakes(lang), w = hardWords(lang), tr = trMist(lang);
       W.put(el, W.topbar('Мои ошибки'),
         h('p', { class: 'muted' }, 'Здесь собирается всё, на чём вы ошибались. Ответили верно — пункт исчезает.'),
         h('div', { class: 'lvl-head' }, 'Слова', h('span', { class: 'muted' }, ' · ' + w.length)),
         w.length ? h('button', { class: 'btn primary wide', style: 'margin:10px 0', onclick: () => W.study('learn', w, 'Трудные слова', {}) }, 'Повторить трудные слова') : h('p', { class: 'muted empty' }, 'Трудных слов нет.'),
         h('div', { class: 'lvl-head' }, 'Грамматика', h('span', { class: 'muted' }, ' · ' + g.length)),
         g.length ? h('button', { class: 'btn primary wide', style: 'margin:10px 0', onclick: () => grammarRetry(lang) }, 'Повторить вопросы') : h('p', { class: 'muted empty' }, 'Ошибок в уроках нет.'),
-        g.length ? h('div', { class: 'list' }, g.map(x => h('div', { class: 'card-row' }, h('div', { class: 'cr-main' }, h('div', null, x.q.q), h('div', { class: 'muted small' }, 'Урок: ' + x.l.title))))) : null);
+        g.length ? h('div', { class: 'list' }, g.map(x => h('div', { class: 'card-row' }, h('div', { class: 'cr-main' }, h('div', null, x.q.q), h('div', { class: 'muted small' }, 'Урок: ' + x.l.title))))) : null,
+        h('div', { class: 'lvl-head' }, 'Предложения', h('span', { class: 'muted' }, ' · ' + tr)),
+        tr ? h('p', { class: 'muted small' }, 'Ошибки перевода, сборки из слов и диктанта. Повторяем их как перевод с русского.') : null,
+        tr ? h('button', { class: 'btn primary wide', style: 'margin:10px 0', onclick: () => W.openTranslateMistakes(lang) }, 'Повторить предложения') : h('p', { class: 'muted empty' }, 'Ошибок в предложениях нет.'));
     };
     render();
     return render;
@@ -412,22 +428,8 @@ function grammarRetry(lang) {
     const ask = () => {
       s.progress(i, qs.length);
       if (i >= qs.length) { W.save(); return W.put(s.body, h('div', { class: 'summary' }, h('div', { class: 'big' }, right + ' из ' + qs.length), h('p', null, right === qs.length ? 'Все ошибки исправлены!' : 'Оставшиеся вопросы ждут вас в «Моих ошибках».'), h('button', { class: 'btn primary', onclick: W.back }, 'Готово'))); }
-      const { l, qi, q } = qs[i], res = h('div', { class: 'result' });
-      const after = ok => {
-        if (ok) right++;
-        W.noteGrammarMistake(l.id, qi, ok);
-        res.className = 'result ' + (ok ? 'right' : 'wrong');
-        W.put(res, h('b', null, ok ? 'Верно' : 'Не совсем'), !ok && q.t ? h('div', null, 'Правильно: ' + q.t[0]) : null, h('div', null, q.w));
-        s.body.append(h('button', { class: 'btn primary wide', onclick: () => { i++; ask(); } }, 'Дальше'));
-      };
-      let ctl;
-      if (q.o) ctl = h('div', { class: 'answers' }, W.shuffle(q.o.map((o, k) => k)).map(k => h('button', { class: 'btn answer', 'data-k': k, onclick: e => {
-        ctl.querySelectorAll('button').forEach(b => { b.disabled = true; if (+b.dataset.k === q.a) b.classList.add('right'); });
-        if (k !== q.a) e.currentTarget.classList.add('wrong'); after(k === q.a);
-      } }, q.o[k])));
-      else { const input = h('input', { type: 'text', class: 'write-in', autocapitalize: 'off', spellcheck: 'false' });
-        ctl = h('form', { class: 'write', onsubmit: e => { e.preventDefault(); if (input.readOnly || !input.value.trim()) return; input.readOnly = true; after(q.t.some(t => W.check(input.value, { w: t }) === 'ok')); } }, input, h('button', { type: 'submit', class: 'btn primary wide' }, 'Проверить')); }
-      W.put(s.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, l.title), h('div', { class: 'q' }, q.q)), ctl, res);
+      const { l, qi, q } = qs[i];
+      W.taskQuestion({ body: s.body, q, label: l.title, grade: ok => { if (ok) right++; W.noteGrammarMistake(l.id, qi, ok); }, next: () => { i++; ask(); } });
     };
     ask();
   });
