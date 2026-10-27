@@ -5,6 +5,12 @@ const W = window.W, h = W.h;
 const TEXTS = () => window.TEXTS || {};
 W.READ_PASS = 70; // текст считается прочитанным, если на вопросы ответили не меньше чем на 70%
 W.textRead = id => { const r = (W.S.read || {})[id]; return !!r && r.best >= W.READ_PASS; };
+// «Новое»: текст добавлен недавно (поле nw — дата выпуска) и ещё не открывался
+W.NEW_DAYS = 45;
+W.textNew = t => !!t.nw && !(W.S.read || {})[t.id] && !(W.S.seen || {})['t:' + t.id] && Date.now() - Date.parse(t.nw) < W.NEW_DAYS * 864e5;
+// тексты лежат в нескольких файлах — показываем по уровням, внутри уровня в порядке выпуска
+const LV = ['A0', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2'];
+W.textsSorted = lang => ((TEXTS()[lang] || []).map((t, i) => [t, i])).sort((a, b) => LV.indexOf(a[0].level) - LV.indexOf(b[0].level) || a[1] - b[1]).map(x => x[0]);
 
 // ---------- поиск слова в словаре с учётом форм ----------
 const dict = {};
@@ -25,7 +31,8 @@ const buildDict = lang => {
     const pl = n.match(/Множественное число: ([a-z]+)/);
     if (pl && !forms.has(pl[1])) forms.set(pl[1], c);
   }
-  return (dict[lang] = { words, forms, phrases });
+  const inPh = new Set(phrases.flatMap(p => p.parts));
+  return (dict[lang] = { words, forms, phrases, inPh });
 };
 // варианты основы: worked → work, studies → study, running → run, bigger → big; основы короче 3 букв не берём (best ≠ be)
 const stems = w => {
@@ -81,8 +88,19 @@ const COMMON = { en: {
   modern: 'современный', society: 'общество', beyond: 'за пределами, сверх', certain: 'определённый; уверенный', researchers: 'исследователи', option: 'вариант', whether: 'ли (I wonder whether — интересно, ли)',
   alternative: 'альтернатива', types: 'типы', examine: 'изучать, осматривать', depend: 'зависеть', remains: 'остаётся (remain — оставаться)', rather: 'скорее; довольно (rather than — вместо того чтобы)', perfect: 'идеальный',
   suffered: 'страдал (suffer from — страдать от)', makers: 'создатели, те, кто делает',
+  worse: 'хуже (bad — worse — worst)', worst: 'худший (bad — worse — worst)', else: 'ещё; другой (nobody else — никто другой)', way: 'путь, дорога; способ', dear: 'дорогой (в обращении)', sir: 'сэр, господин', fun: 'веселье; весёлый (for fun — ради забавы)',
+  business: 'бизнес, дело', businesses: 'предприятия, компании', several: 'несколько', plenty: 'множество (plenty of — полно, много)', none: 'ни один, никто', anybody: 'кто-нибудь; никто (в отрицании)', "we've": 'мы (= we have)', "they've": 'они (= they have)', "you've": 'ты, вы (= you have)',
+  completely: 'полностью, совершенно', complete: 'полный, законченный; завершить', useful: 'полезный', useless: 'бесполезный', lucky: 'везучий, удачливый', millions: 'миллионы', million: 'миллион', gentleman: 'джентльмен, господин', whom: 'кого, кому (книжн.)', halfway: 'на полпути',
+  doing: 'делающий (do — делать)', able: 'способный (be able to — мочь)', age: 'возраст', country: 'страна; сельская местность', group: 'группа', such: 'такой', either: 'любой из двух; тоже (в отрицании)', added: 'добавил (add)', speech: 'речь', workers: 'работники', worker: 'работник',
+  world: 'мир, свет', history: 'история (наука, прошлое)', health: 'здоровье', danger: 'опасность', within: 'в пределах, в течение, внутри', though: 'хотя', upon: 'на; по (книжн. = on)', figure: 'фигура; цифра', stone: 'камень', stones: 'камни',
+  silent: 'безмолвный, молчаливый', kill: 'убить', killed: 'убил; убит (kill)', "wouldn't": 'не (= would not)', "shouldn't": 'не следует (= should not)', beside: 'рядом с', disappear: 'исчезать', disappeared: 'исчез (disappear)', human: 'человек; человеческий', terribly: 'ужасно',
+  middle: 'середина (in the middle of — посреди)', reached: 'достиг, дошёл (reach)', mad: 'сумасшедший; злой', enter: 'входить', entrance: 'вход', precious: 'драгоценный', weak: 'слабый', strict: 'строгий', escape: 'сбежать; побег', asleep: 'спящий (fall asleep — уснуть)', soul: 'душа', insult: 'оскорбление; оскорбить',
+  according: 'согласно (according to — по словам, согласно)', further: 'дальше, далее; дополнительный', provide: 'обеспечивать, предоставлять', information: 'информация, сведения', general: 'общий (in general — в целом)', attention: 'внимание', difference: 'разница', differences: 'различия',
+  remain: 'оставаться', active: 'активный', fill: 'заполнять', filled: 'заполненный (fill)', surprise: 'удивление; удивлять', somebody: 'кто-то', interest: 'интерес; интересовать', neither: 'ни один из двух; тоже не (neither do I — я тоже нет)', add: 'добавлять', adding: 'добавляя (add)',
+  easily: 'легко', control: 'контроль; управлять', conversations: 'разговоры', conversation: 'разговор',
   so: 'так; поэтому', very: 'очень', just: 'только что; просто', yes: 'да', no: 'нет', oh: 'о!', one: 'один; одна', ok: 'ладно, хорошо', mr: 'мистер', mrs: 'миссис', dr: 'доктор'
 }};
+const ART = new Set(['a', 'an', 'the']);
 const tokWord = t => t.toLowerCase().replace(/[’‘]/g, "'").replace(/^'+|'+$/g, '');
 // порядок: словарь текста → служебные слова и сокращения → фраза, в которой стоит именно это слово → карточка и её формы → основы → служебные по основе
 W.lookup = (raw, lang, text, sentence, idx) => {
@@ -91,7 +109,9 @@ W.lookup = (raw, lang, text, sentence, idx) => {
   const gl = (text && text.gl) || {}, cm = COMMON[lang] || {};
   const D = buildDict(lang);
   if (gl[w]) return { w, t: gl[w], from: 'gl' };
-  if (cm[w] && (w.length <= 3 || w.includes("'"))) return { w, t: cm[w], from: 'common' };
+  // короткое служебное слово: сначала проверяем фразу (by the way), но артикли фраз не запускают (a little mouse ≠ «немного»)
+  const short = cm[w] && (w.length <= 3 || w.includes("'"));
+  if (short && (!D.inPh.has(w) || ART.has(w))) return { w, t: cm[w], from: 'common' };
   if (sentence) {
     const toks = sentence.split(/\s+/).map(x => tokWord(x.replace(/^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$/g, ''))).filter(Boolean);
     const at = idx != null ? idx : toks.indexOf(w);
@@ -101,6 +121,7 @@ W.lookup = (raw, lang, text, sentence, idx) => {
     }
     if (best) return { w: best.c.w, t: best.c.t, card: best.c, phrase: true };
   }
+  if (short) return { w, t: cm[w], from: 'common' }; // фраза не нашлась — служебное значение, а не карточка (may ≠ «май»)
   if (D.words.has(w)) return { w: D.words.get(w).w, t: D.words.get(w).t, card: D.words.get(w) };
   if (D.forms.has(w)) return { w: D.forms.get(w).w, t: D.forms.get(w).t, card: D.forms.get(w), form: w };
   if (cm[w]) return { w, t: cm[w], from: 'common' };
@@ -134,9 +155,9 @@ const addWord = (hit, sentence, tr, lang) => {
 // ---------- список текстов ----------
 const words = t => t.p.flat().map(s => s[0]).join(' ').split(/\s+/).length;
 W.renderReading = root => {
-  const lang = W.S.lang, list = TEXTS()[lang] || [];
+  const lang = W.S.lang, list = W.textsSorted(lang);
   const read = W.S.read || {};
-  const kids = [];
+  const kids = [], nNew = list.filter(W.textNew).length;
   let last = null;
   list.forEach((t, i) => {
     if (t.level !== last) { last = t.level; const inL = list.filter(x => x.level === t.level);
@@ -144,11 +165,12 @@ W.renderReading = root => {
     const r = read[t.id], n = words(t), ok = W.textRead(t.id);
     kids.push(h('button', { class: 'lesson', onclick: () => openText(t) },
       h('span', { class: 'l-num' + (ok ? ' done' : '') }, ok ? '✓' : i + 1),
-      h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, t.title),
+      h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, t.title, W.textNew(t) ? h('span', { class: 'tag-next' }, 'новое') : null),
         h('span', { class: 'muted small' }, t.src + ' · ' + n + ' слов · ~' + Math.max(1, Math.round(n / 90)) + ' мин' + (r ? ' · вопросы ' + r.best + '%' : '')))));
   });
   W.put(root,
     h('header', { class: 'head' }, h('div', { class: 'kicker' }, 'тексты по уровням'), h('h1', null, 'Чтение'), W.langSwitch()),
+    nNew ? h('p', { class: 'small' }, h('b', null, 'Новые тексты: ' + nNew), ' — отмечены «новое».') : null,
     h('p', { class: 'muted' }, 'Нажмите на любое слово — появится перевод. Неизвестные слова можно сразу добавить в свою колоду. Текст засчитывается, когда на вопросы отвечено хотя бы на 70%.'),
     list.length ? h('div', { class: 'lessons' }, kids) : h('p', { class: 'muted empty' }, 'Тексты для этого языка готовятся.'));
 };
@@ -160,6 +182,7 @@ let playing = null;
 
 function openText(t) {
   const lang = W.S.lang;
+  if (W.textNew(t)) { W.markSeen('t:' + t.id); W.save(); }
   W.resetDict(); // словарь мог измениться: свои колоды, вход в аккаунт, «скрыть грубые»
   // докачиваем звук предложений, чтобы текст звучал и без интернета
   if (W.prefetchUrls && lang === 'en') setTimeout(() => W.prefetchUrls(t.p.flat().map(s => W.audioUrl(s[0], lang))), 800);

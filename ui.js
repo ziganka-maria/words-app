@@ -284,7 +284,7 @@ function renderHome() {
     h('div', { class: 'lvl-head' }, 'Разделы'),
     h('div', { class: 'lessons' },
       rubric('words', 'Слова', W.words(c.total) + ' с примерами и озвучкой' + (c.known ? ' · выучено ' + c.known : ''), () => W.showTab('decks')),
-      texts.length ? rubric('read', 'Чтение', W.plural(texts.length, 'текст', 'текста', 'текстов') + ', перевод любого слова по нажатию' + (read ? ' · прочитано ' + read : ''), () => W.showTab('read')) : null,
+      texts.length ? rubric('read', 'Чтение', W.plural(texts.length, 'текст', 'текста', 'текстов') + ', перевод любого слова по нажатию' + (read ? ' · прочитано ' + read : '') + (W.textNew && texts.some(W.textNew) ? ' · новых ' + texts.filter(W.textNew).length : ''), () => W.showTab('read')) : null,
       rubric('gram', 'Грамматика', lessons.length ? W.plural(lessons.length, 'урок', 'урока', 'уроков') + ': правило, примеры, проверка' + (passed ? ' · пройдено ' + passed : '') : 'уроки готовятся', () => W.showTab('gram')),
       rubric('trans', 'Перевод', lang === 'en' ? 'с русского: предложения, сборка из слов, тексты на темы' : 'задания для этого языка готовятся', () => W.showTab('trans')),
       W.drillsBlock ? rubric('drills', 'Тренажёры', lang === 'en' ? 'неправильные глаголы, произношение, мои ошибки' : 'произношение', W.openDrills) : null),
