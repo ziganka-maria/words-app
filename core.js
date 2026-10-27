@@ -58,7 +58,7 @@ W.save = quiet => {
   if (!quiet) W.S.mod = Date.now();
   try { localStorage.setItem(KEY, JSON.stringify(W.S)); saveWarned = false; }
   catch (e) {
-    if (!saveWarned && W.toast) W.toast('Не удалось сохранить! Сделайте копию в «Ещё» → «Сохранность»');
+    if (!saveWarned && W.toast) W.toast('Не удалось сохранить! Сделайте копию: «Профиль» → «Сохранность»');
     saveWarned = true;
   }
   if (!quiet && W.afterSave) W.afterSave();
@@ -414,4 +414,7 @@ W.audioKey = t => {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; }
   return h.toString(16).padStart(8, '0') + '-' + s.length;
 };
+// короткие записи (до трёх слов) озвучены спокойнее — без шумного «выдоха» на конце; у них своё имя файла
+W.audioCalm = t => W.speechText(t).split(' ').length <= 3;
+W.audioFile = t => W.audioKey(t) + (W.audioCalm(t) ? 'c' : '');
 })();

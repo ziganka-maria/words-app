@@ -28,7 +28,8 @@
   <path style="fill:var(--sw-red)" d="M176 40 C181 42 184 45 185.5 48 C184.5 52 181 56 176 59 C172 62 168 63 165 62 C166 55 169 47 176 40 Z"/>
 </symbol></svg>
 <main>
-  <section id="tab-decks"></section>
+  <section id="tab-home"></section>
+  <section id="tab-decks" hidden></section>
   <section id="tab-read" hidden></section>
   <section id="tab-gram" hidden></section>
   <section id="tab-trans" hidden></section>
@@ -37,11 +38,11 @@
 </main>
 <div id="screens"></div>
 <nav>
-  <button data-tab="decks" class="on"><span>Колоды</span></button>
-  <button data-tab="read"><span>Чтение</span></button>
-  <button data-tab="gram"><span>Грамматика</span></button>
-  <button data-tab="trans"><span>Перевод</span></button>
-  <button data-tab="more"><span>Профиль</span></button>
+  <button data-tab="home" data-icon="home" class="on"><span>Главная</span></button>
+  <button data-tab="decks" data-icon="words"><span>Слова</span></button>
+  <button data-tab="read" data-icon="read"><span>Чтение</span></button>
+  <button data-tab="gram" data-icon="practice"><span>Практика</span></button>
+  <button data-tab="more" data-icon="profile"><span>Профиль</span></button>
 </nav>
 <div id="modal" hidden></div>
 <script src="data-lib.js"></script>

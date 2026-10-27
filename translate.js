@@ -284,7 +284,7 @@ W.renderTranslate = root => {
   const card = (emoji, title, sub, fn) => h('button', { class: 'lesson', onclick: fn },
     h('span', { class: 'l-num', 'aria-hidden': 'true' }, emoji), h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title), h('span', { class: 'muted small' }, sub)));
   W.put(root,
-    h('header', { class: 'head' }, h('h1', null, 'Перевод'), W.langSwitch()),
+    h('header', { class: 'head' }, W.practiceSwitch('trans'), h('h1', null, 'Перевод'), W.langSwitch()),
     h('p', { class: 'muted' }, 'Переводите с русского: предложения, сборка из слов и короткие тексты на тему.'),
     levels.length ? h('div', { class: 'chips' }, levels.map(l => h('button', { class: 'chip' + (l === L ? ' on' : ''), 'aria-pressed': l === L ? 'true' : 'false', onclick: () => { curLv = l; W.renderTab(); } }, l))) : null,
     !levels.length ? h('p', { class: 'muted empty' }, 'Для этого языка задания пока готовятся.') : h('section', null,

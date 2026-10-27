@@ -1,5 +1,5 @@
 'use strict';
-// вкладки «Грамматика» и «Ещё»
+// вкладки «Грамматика» и «Профиль», приветствие
 (function () {
 const W = window.W, h = W.h;
 
@@ -26,7 +26,7 @@ W.renderGrammar = root => {
         h('span', { class: 'muted small' }, l.sub + (g ? ' · лучший результат ' + g.best + '%' : '')))));
   });
   W.put(root,
-    h('header', { class: 'head' }, h('h1', null, 'Грамматика'), W.langSwitch()),
+    h('header', { class: 'head' }, W.practiceSwitch('gram'), h('h1', null, 'Грамматика'), W.langSwitch()),
     h('p', { class: 'muted' }, 'Короткие уроки по порядку: правило простыми словами, примеры и проверка. Урок считается пройденным при 70% и выше.'),
     own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
     W.drillsBlock ? W.drillsBlock(lang) : null,
@@ -109,7 +109,7 @@ function quiz(el, l, num) {
   ask();
 }
 
-// ---------- «Ещё»: настройки, копия, установка ----------
+// ---------- «Профиль»: настройки, копия, установка ----------
 let installEvt = null;
 window.addEventListener('beforeinstallprompt', e => {
   e.preventDefault(); installEvt = e;
@@ -203,7 +203,7 @@ function accountPanel() {
         h('button', { class: 'btn', onclick: () => W.confirm('Выйти из аккаунта? Данные останутся на сервере, а на этом телефоне откроется режим без аккаунта.', 'Выйти', () => { A.signOut(); }) }, 'Выйти')));
     return panel;
   }
-  panel.append(h('p', { class: 'muted small' }, 'Войдите, чтобы прогресс сохранялся на сервере и был одинаковым на телефоне и компьютере. Без интернета всё работает, как раньше.'), loginForm(''));
+  panel.append(h('p', { class: 'muted small' }, 'Войдите, чтобы прогресс сохранялся на сервере и был одинаковым на телефоне и компьютере. Без интернета приложение тоже работает.'), loginForm(''));
   return panel;
 }
 
@@ -238,10 +238,63 @@ W.askNewPassword = () => {
     W.acc.setPassword(pass.value).then(() => W.toast('Пароль изменён'), e => W.toast(e.message));
   } }]);
 };
-// обновляем блок аккаунта, если вкладка «Ещё» открыта
+// обновляем блок аккаунта, если вкладка «Профиль» открыта, и напоминание о входе на главной
 W.accChanged = () => {
   const old = document.getElementById('acc-panel');
   if (old && !document.getElementById('tab-more').hidden && !old.contains(document.activeElement)) old.replaceWith(accountPanel());
+  if (!document.getElementById('tab-home').hidden && !document.getElementById('screens').children.length) W.renderTab();
+};
+// «Профиль» сразу на форме входа
+W.openAccount = () => {
+  W.showTab('more');
+  setTimeout(() => {
+    const p = document.getElementById('acc-panel');
+    if (!p) return;
+    p.scrollIntoView({ block: 'start' });
+    const mail = p.querySelector('input[type=email]');
+    if (mail && !mail.value) mail.focus({ preventScroll: true });
+  }, 60);
+};
+
+// ---------- приветствие: первая полоса при первом запуске ----------
+const WELCOME = 'words-welcome-v1';
+W.openWelcome = () => W.push(el => {
+  // без аккаунтов (нет настроек сервера) звать некуда — показываем один раз
+  if (!(W.acc && W.acc.configured && W.acc.configured())) try { localStorage.setItem(WELCOME, 'off'); } catch (e) {}
+  const n = W.allCards('en').length, A = W.acc;
+  const signed = A && A.session, canSign = A && A.configured && A.configured();
+  // кнопки сначала закрывают статью, а потом открывают нужное — иначе «назад» вернул бы в статью
+  const go = fn => () => W.backThen(fn);
+  const part = (title, text) => h('p', null, h('b', null, title + '. '), text);
+  W.put(el, W.topbar('', null, 'close'),
+    h('article', { class: 'welcome' },
+      h('div', { class: 'kicker head-line' }, h('span', null, 'Живые слова'), h('span', null, new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }))),
+      W.emblem('emblem welcome-emblem'),
+      h('h1', null, 'Язык, на котором говорят на самом деле'),
+      h('p', { class: 'lead' }, 'Учебники учат «London is the capital». А люди в чатах, сериалах и на работе говорят иначе. Здесь собран язык, который вы услышите в жизни.'),
+      h('div', { class: 'welcome-cols' },
+        part('Слова', 'Больше ' + (Math.floor(n / 1000) * 1000).toLocaleString('ru-RU') + ' карточек от A1 до C1, у каждой пример и озвучка. Приложение само напоминает повторить слово, когда вы начинаете его забывать.'),
+        part('Чтение', 'Рассказы и статьи: нажмите на любое слово, чтобы увидеть перевод.'),
+        part('Грамматика', 'Короткие уроки с примерами и заданиями.'),
+        part('Перевод', 'Переводите предложения с русского, собирайте из слов, пишите короткие тексты на темы.'),
+        part('Тренажёры', 'Неправильные глаголы, произношение (говорите в микрофон — приложение проверит) и работа над своими ошибками.')),
+      h('p', null, 'Начните с теста уровня или сразу с занятия на день: приложение само подберёт слова. Есть и немецкий — он пока в начале пути.'),
+      h('p', { class: 'muted' }, 'Всё работает без интернета.'),
+      h('div', { class: 'col-btns' },
+        canSign && !signed ? h('button', { class: 'btn primary wide', onclick: go(W.openAccount) }, 'Войти или создать аккаунт') : null,
+        canSign && !signed ? h('p', { class: 'muted small center' }, 'прогресс не потеряется и будет одинаковым на телефоне и компьютере') : null,
+        W.openLevelTest ? h('button', { class: 'btn wide', onclick: go(() => { if (W.S.lang !== 'en' && !((window.LEVELTEST || {})[W.S.lang] || []).length) W.setLang('en'); W.openLevelTest(W.S.lang); }) }, 'Узнать свой уровень') : null,
+        h('button', { class: 'link welcome-skip', onclick: () => W.back() }, signed ? 'К занятиям →' : 'Продолжить без аккаунта →'),
+        signed || !canSign ? null : h('button', { class: 'link welcome-skip muted', onclick: () => {
+          try { localStorage.setItem(WELCOME, 'off'); } catch (e) {}
+          W.back();
+        } }, 'Больше не показывать'))));
+});
+// при каждом запуске, пока человек не вошёл в аккаунт или не попросил больше не показывать
+W.maybeWelcome = () => {
+  let off = false;
+  try { off = localStorage.getItem(WELCOME) === 'off'; } catch (e) {}
+  if (!off && !(W.acc && W.acc.session)) W.openWelcome();
 };
 
 function exportBackup() {
@@ -282,7 +335,7 @@ function importBackup() {
       try { s = JSON.parse(t); } catch (e) { return W.toast('Это не файл копии'); }
       if (!W.validState(s)) return W.toast('Это не файл копии «Живых слов» или он повреждён');
       const n = s.decks.length, p = Object.keys(s.prog || {}).length;
-      W.confirm(`Ваши текущие колоды и прогресс заменятся данными из копии (колод: ${n}, слов с прогрессом: ${p}). Если передумаете — в «Ещё» появится кнопка «Вернуть, как было».`, 'Восстановить', () => {
+      W.confirm(`Ваши текущие колоды и прогресс заменятся данными из копии (колод: ${n}, слов с прогрессом: ${p}). Если передумаете — в «Профиле» появится кнопка «Вернуть, как было».`, 'Восстановить', () => {
         try {
           localStorage.setItem(PREV(), JSON.stringify(W.S));
           s.mod = Date.now(); localStorage.setItem(KEY(), JSON.stringify(s));

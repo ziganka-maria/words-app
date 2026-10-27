@@ -105,7 +105,7 @@ W.openLevelTest = lang => W.push(el => {
     const r = T.result, mistakes = T.log.filter(x => !x.ok);
     W.S.level[lang] = { lv: r.lv, ts: Date.now(), g: r.g, v: r.v };
     W.save();
-    // на главной сразу раскрываем папку с подходящими колодами
+    // в «Словах» сразу раскрываем папку с подходящими колодами
     // папка своего уровня, а если её ещё нет — ближайшая из имеющихся ниже
     const have = W.builtinFolders(lang).map(f => f.id);
     const ids = ['a1', 'a2', 'b1', 'b2', 'c1'].map(x => lang + '-' + x).filter(id => have.includes(id));
@@ -127,7 +127,7 @@ W.openLevelTest = lang => W.push(el => {
           h('div', { class: 'wrong-a' }, 'Ваш ответ: ' + (x.choice < 0 ? 'не знаю' : x.q.o[x.choice])),
           h('div', { class: 'right-a' }, 'Верно: ' + x.q.o[x.q.a])))) : h('p', null, 'Без единой ошибки! 🎯'),
       h('div', { class: 'col-btns' },
-        h('button', { class: 'btn primary wide', onclick: () => { W.back(); } }, 'К колодам'),
+        h('button', { class: 'btn primary wide', onclick: () => W.backThen(() => W.showTab('decks')) }, 'К словам своего уровня'),
         h('button', { class: 'btn wide', onclick: again }, 'Пройти ещё раз'))));
     el.scrollTop = 0;
   };

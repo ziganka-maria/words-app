@@ -51,24 +51,27 @@ fs.mkdirSync(tmp, { recursive: true });
 for (const [dir, model] of Object.entries(VOICES)) {
   const outDir = path.join(APP, 'audio', dir);
   fs.mkdirSync(outDir, { recursive: true });
-  const todo = [...texts].filter(t => !fs.existsSync(path.join(outDir, W.audioKey(t) + '.mp3')));
+  // короткие и длинные озвучиваются разными настройками, поэтому порции не смешиваем
+  const todo = [...texts].filter(t => !fs.existsSync(path.join(outDir, W.audioFile(t) + '.mp3'))).sort((a, b) => W.audioCalm(b) - W.audioCalm(a));
+  const cut = todo.filter(W.audioCalm).length;
   console.log(dir, ': всего', texts.size, ', озвучить', todo.length);
-  for (let i = 0; i < todo.length; i += 200) {
-    const part = todo.slice(i, i + 200);
-    const input = part.map(t => JSON.stringify({ text: t, output_file: path.join(tmp, W.audioKey(t) + '.wav') })).join('\n') + '\n';
-    const r = spawnSync(path.join(PIPER, 'piper', 'piper.exe'), ['-m', path.join(PIPER, model + '.onnx'), '--json-input', '--sentence_silence', '0.1'], { input, maxBuffer: 1 << 26 });
+  for (let i = 0; i < todo.length;) {
+    const part = todo.slice(i, i < cut ? Math.min(i + 200, cut) : i + 200);
+    i += part.length;
+    const input = part.map(t => JSON.stringify({ text: t, output_file: path.join(tmp, W.audioFile(t) + '.wav') })).join('\n') + '\n';
+    const r = spawnSync(path.join(PIPER, 'piper', 'piper.exe'), ['-m', path.join(PIPER, model + '.onnx'), '--json-input', '--sentence_silence', '0.1'].concat(W.audioCalm(part[0]) ? ['--noise_scale', '0.3', '--noise_w', '0.3'] : []), { input, maxBuffer: 1 << 26 });
     if (r.status !== 0) { console.log('piper error', r.stderr.toString().slice(-500)); process.exit(1); }
     for (const t of part) {
-      const wavFile = path.join(tmp, W.audioKey(t) + '.wav');
+      const wavFile = path.join(tmp, W.audioFile(t) + '.wav');
       if (!fs.existsSync(wavFile)) { console.log('нет файла для:', t); continue; }
-      fs.writeFileSync(path.join(outDir, W.audioKey(t) + '.mp3'), toMp3(fs.readFileSync(wavFile)));
+      fs.writeFileSync(path.join(outDir, W.audioFile(t) + '.mp3'), toMp3(fs.readFileSync(wavFile)));
       fs.unlinkSync(wavFile);
     }
-    console.log('  готово', Math.min(i + 200, todo.length), '/', todo.length);
+    console.log('  готово', i, '/', todo.length);
   }
   const size = fs.readdirSync(outDir).reduce((s, f) => s + fs.statSync(path.join(outDir, f)).size, 0);
   if (PRUNE) {
-    const keep = new Set([...texts].map(t => W.audioKey(t) + '.mp3'));
+    const keep = new Set([...texts].map(t => W.audioFile(t) + '.mp3'));
     const old = fs.readdirSync(outDir).filter(f => !keep.has(f));
     old.forEach(f => fs.unlinkSync(path.join(outDir, f)));
     console.log(dir, ': удалено устаревших', old.length);

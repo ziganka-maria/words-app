@@ -16,6 +16,21 @@ W.allAudioTexts = lang => {
   return [...set];
 };
 
+// убрать из кэша записи, которых больше нет (сменилось имя файла или текст примера)
+W.cleanAudioCache = async () => {
+  if (!('caches' in window) || location.protocol === 'file:') return;
+  try { if (localStorage.getItem('words-audio-clean') === W.VERSION) return; } catch (e) { return; }
+  try {
+    const keep = new Set(W.allAudioTexts('en').map(t => W.audioFile(t) + '.mp3'));
+    const c = await caches.open(AUDIO_CACHE);
+    for (const r of await c.keys()) {
+      const f = new URL(r.url).pathname.split('/').pop();
+      if (r.url.includes('/audio/') && !keep.has(f)) await c.delete(r);
+    }
+    localStorage.setItem('words-audio-clean', W.VERSION);
+  } catch (e) {}
+};
+
 let job = null;
 // что уже в телефоне: один запрос списка вместо проверки каждой записи (их тысячи)
 const path = u => new URL(u, location.href).pathname;

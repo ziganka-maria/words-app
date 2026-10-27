@@ -376,3 +376,31 @@ textarea { resize: vertical; border: 1px solid var(--rule); }
 .tr-model p { line-height: 1.5; }
 .chip.on { background: var(--tx); color: var(--bg); }
 .tr-in.write-in { text-align: left; font: 17px/1.45 'Lora', Georgia, serif !important; padding: 12px; }
+
+/* главная: рубрики, напоминание о входе; «Практика» */
+.rubric .l-num { color: var(--accent); display: flex; align-items: center; }
+.rubric .l-num .ic svg { width: 26px; height: 26px; stroke-width: 1.4; }
+.acc-note { display: flex; align-items: center; gap: 10px; border-left: 3px solid var(--accent); background: var(--surface); padding: 10px 12px; margin: 4px 0 8px; font-size: 14.5px; }
+.acc-note .link { flex: none; }
+.practice-seg { border-top-width: 1px; border-top-style: solid; }
+.practice-seg button.on { color: var(--accent); }
+nav button .ic svg { width: 22px; height: 22px; stroke-width: 1.5; }
+
+/* приветствие — передовица */
+.welcome { padding: 4px 0 24px; }
+.welcome .head-line { display: flex; justify-content: space-between; border-bottom: 3px double var(--rule); padding-bottom: 8px; }
+.welcome-emblem { display: block; width: 120px; height: 86px; margin: 18px auto 6px; }
+.welcome h1 { font-size: 36px; line-height: 1.02; text-align: center; margin: 6px 0 14px; }
+.welcome .lead { font-style: italic; font-size: 17.5px; line-height: 1.55; text-align: center; border-bottom: 1px solid var(--rule); padding-bottom: 14px; }
+.welcome-cols p { font-size: 16px; line-height: 1.55; margin: 10px 0; }
+.welcome-cols b { font-family: var(--serif); }
+.welcome .col-btns { margin-top: 18px; }
+.welcome-skip { display: block; margin: 8px auto 0; }
+@media (min-width: 520px) { .welcome-cols { column-count: 2; column-gap: 22px; column-rule: 1px solid var(--line); } .welcome-cols p { break-inside: avoid; } }
+.acc-note-btns { display: flex; flex-direction: column; align-items: flex-end; flex: none; }
+.acc-note-btns .link { margin: 0; }
+.inline-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.practice-seg { border-top: 0; border-bottom: 2px solid var(--rule); }
+.practice-seg button { font-size: 12.5px; font-weight: 600; padding: 10px 4px; }
+.practice-seg button.on { box-shadow: inset 0 -3px 0 var(--accent); }
+.ic text { text-transform: none; letter-spacing: 0; }

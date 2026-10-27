@@ -36,7 +36,16 @@ const ICONS = {
   star: '<svg viewBox="0 0 24 24"><path d="M12 3l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.8 6.6 19.7l1.1-6.1L3.2 9.4l6.1-.8z"/></svg>',
   more: '<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="19" cy="12" r="1.6"/></svg>',
   swap: '<svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
-  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>'
+  plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  // нижнее меню и рубрики главной
+  home: '<svg viewBox="0 0 24 24"><path d="M3.5 11L12 4l8.5 7"/><path d="M6 9.5V20h12V9.5"/><path d="M10 20v-5.5h4V20"/></svg>',
+  gram: '<svg viewBox="0 0 24 24"><text x="12" y="18.5" text-anchor="middle" font-size="19" font-family="Georgia, serif" fill="currentColor" stroke="none">§</text></svg>',
+  words: '<svg viewBox="0 0 24 24"><rect x="8" y="3" width="12" height="15" rx="1.5"/><path d="M5 6.5v13.5h11"/><text x="14" y="14" text-anchor="middle" font-size="8.5" font-family="Georgia, serif" fill="currentColor" stroke="none">Aa</text></svg>',
+  read: '<svg viewBox="0 0 24 24"><path d="M3 5.5c3-1 6-.8 9 1.2V20c-3-2-6-2.2-9-1.2z"/><path d="M21 5.5c-3-1-6-.8-9 1.2V20c3-2 6-2.2 9-1.2z"/></svg>',
+  practice: '<svg viewBox="0 0 24 24"><path d="M15 4l5 5L9 20H4v-5z"/><path d="M13 6l5 5"/></svg>',
+  trans: '<svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg>',
+  drills: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8"/></svg>',
+  profile: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>'
 };
 W.iconBtn = (name, label, onclick, cls) => h('button', { class: 'icon-btn ' + (cls || ''), 'aria-label': label, title: label, onclick }, W.icon(name));
 
@@ -45,7 +54,7 @@ W.iconBtn = (name, label, onclick, cls) => h('button', { class: 'icon-btn ' + (c
 // голос телефона, причём выбираем лучший из установленных
 W.canSpeak = () => 'speechSynthesis' in window;
 W.audioDir = lang => lang === 'en' ? (W.S.set.voice === 'gb' ? 'en-gb' : 'en-us') : null;
-W.audioUrl = (text, lang) => { const d = W.audioDir(lang); return d ? 'audio/' + d + '/' + W.audioKey(text) + '.mp3' : null; };
+W.audioUrl = (text, lang) => { const d = W.audioDir(lang); return d ? 'audio/' + d + '/' + W.audioFile(text) + '.mp3' : null; };
 const voiceScore = (v, tag, lang) => (v.lang.replace('_', '-') === tag ? 4 : v.lang.slice(0, 2) === lang ? 2 : -99)
   + (/natural|neural|premium|enhanced|siri/i.test(v.name) ? 3 : 0) + (/google/i.test(v.name) ? 2 : 0);
 // голос телефона; done вызывается, когда фраза дочитана (или не прозвучала)
@@ -168,6 +177,8 @@ W.push = build => {
 };
 // pendingBack защищает от двойного тапа: второй history.back() вывел бы из приложения
 W.back = () => { if (stack.length && !pendingBack) { pendingBack = true; history.back(); } };
+// закрыть экран и потом сделать fn; если закрытие не началось (двойной тап) — ничего не запоминаем
+W.backThen = fn => { if (stack.length && !pendingBack) { W.afterBack = fn; W.back(); } };
 W.closeAll = () => {
   const n = stack.length + (modalEntry ? 1 : 0);
   if (n && !pendingBack) { pendingBack = true; history.go(-n); }
@@ -185,18 +196,22 @@ window.addEventListener('popstate', () => {
     if (top && top.refresh) top.refresh(); else W.renderTab();
     if (W.checkStamps) setTimeout(W.checkStamps, 400);
   }
+  // действие, которое ждало закрытия экрана (например, «Войти» из приветствия)
+  if (W.afterBack && !stack.length) { const f = W.afterBack; W.afterBack = null; setTimeout(f, 0); }
 });
 W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
   W.iconBtn(kind || 'back', kind === 'close' ? 'Закрыть' : 'Назад', W.back),
   h('div', { class: 'tb-title' }, title), h('div', { class: 'tb-right' }, right || null));
 
 // ---------- вкладки ----------
-let tab = 'decks';
-const TABS = { decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), trans: () => W.renderTranslate($('#tab-trans')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
+let tab = 'home';
+const TABS = { home: () => renderHome(), decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), trans: () => W.renderTranslate($('#tab-trans')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
 W.renderTab = () => { TABS[tab](); if (W.checkStamps) setTimeout(W.checkStamps, 300); };
 W.showTab = t => {
   tab = t;
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === (t === 'search' ? 'decks' : t)));
+  // поиск — часть «Слов», перевод — вторая половина «Практики»
+  const navTab = { search: 'decks', trans: 'gram' }[t] || t;
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === navTab));
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'tab-' + t; });
   W.renderTab();
   window.scrollTo(0, 0);
@@ -229,46 +244,95 @@ W.plural = plural;
 W.words = n => plural(n, 'слово', 'слова', 'слов');
 const deckCards = d => d.cards.filter(W.vis);
 
-// ---------- «Колоды» ----------
-function renderDecks() {
-  const root = $('#tab-decks'), lang = W.S.lang;
-  const all = W.allCards(lang), c = W.counts(all), q = W.queue(all);
+// «Практика» — две вкладки (грамматика и перевод) с переключателем сверху
+W.practiceSwitch = cur => h('div', { class: 'seg practice-seg', role: 'tablist' },
+  [['gram', 'Грамматика'], ['trans', 'Перевод']].map(([t, l]) =>
+    h('button', { class: cur === t ? 'on' : '', role: 'tab', 'aria-selected': String(cur === t), onclick: () => cur !== t && W.showTab(t) }, l)));
+// тренажёры живут во вкладке «Грамматика» — открываем её на нужном месте
+W.openDrills = () => {
+  W.showTab('gram');
+  setTimeout(() => { const el = document.getElementById('drills-' + W.S.lang); if (el) el.scrollIntoView({ block: 'start' }); }, 50);
+};
+
+// ---------- «Главная»: первая полоса ----------
+function renderHome() {
+  const root = $('#tab-home'), lang = W.S.lang;
+  const all = W.allCards(lang), c = W.counts(all);
+  const lessons = ((window.GRAMMAR || {})[lang] || []), texts = ((window.TEXTS || {})[lang] || []);
+  const read = Object.keys(W.S.read || {}).filter(id => texts.some(t => t.id === id)).length;
+  const passed = lessons.filter(l => W.S.gram[l.id] && W.S.gram[l.id].done).length;
+  const rubric = (icon, title, sub, fn) => h('button', { class: 'lesson rubric', onclick: fn },
+    h('span', { class: 'l-num' }, W.icon(icon)),
+    h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title), h('span', { class: 'muted small' }, sub)));
+  const A = W.acc;
+  // без аккаунта прогресс живёт только в этом телефоне — напоминаем, пока человек не вошёл
+  let later = 0;
+  try { later = +localStorage.getItem('words-accnote') || 0; } catch (e) {}
+  const accNote = A && A.configured && A.configured() && !A.session && Date.now() - later > 7 * 864e5 ? h('div', { class: 'acc-note' },
+    h('span', null, 'Войдите, чтобы прогресс не потерялся и был одинаковым на телефоне и компьютере.'),
+    h('span', { class: 'acc-note-btns' },
+      h('button', { class: 'link', onclick: () => W.openAccount() }, 'войти / создать'),
+      h('button', { class: 'link muted', onclick: () => { try { localStorage.setItem('words-accnote', String(Date.now())); } catch (e) {} W.renderTab(); } }, 'не сейчас'))) : null;
+  W.put(root,
+    h('header', { class: 'head' },
+      h('div', { class: 'kicker head-line' }, h('span', null, W.issueLine()), h('button', { class: 'link', onclick: () => W.showTab('search') }, 'поиск')),
+      h('h1', null, h('span', { html: 'Живые<br>слова' }), W.emblem()),
+      W.langSwitch()),
+    iosWarn(), accNote, W.levelCard ? W.levelCard() : null, todayBlock(lang, all),
+    h('div', { class: 'lvl-head' }, 'Разделы'),
+    h('div', { class: 'lessons' },
+      rubric('words', 'Слова', W.words(c.total) + ' с примерами и озвучкой' + (c.known ? ' · выучено ' + c.known : ''), () => W.showTab('decks')),
+      texts.length ? rubric('read', 'Чтение', W.plural(texts.length, 'текст', 'текста', 'текстов') + ', перевод любого слова по нажатию' + (read ? ' · прочитано ' + read : ''), () => W.showTab('read')) : null,
+      rubric('gram', 'Грамматика', lessons.length ? W.plural(lessons.length, 'урок', 'урока', 'уроков') + ': правило, примеры, проверка' + (passed ? ' · пройдено ' + passed : '') : 'уроки готовятся', () => W.showTab('gram')),
+      rubric('trans', 'Перевод', lang === 'en' ? 'с русского: предложения, сборка из слов, тексты на темы' : 'задания для этого языка готовятся', () => W.showTab('trans')),
+      W.drillsBlock ? rubric('drills', 'Тренажёры', lang === 'en' ? 'неправильные глаголы, произношение, мои ошибки' : 'произношение', W.openDrills) : null),
+    h('button', { class: 'btn ghost wide', onclick: () => W.openWelcome() }, 'Как устроено приложение'));
+}
+
+function todayBlock(lang, all) {
+  const c = W.counts(all), q = W.queue(all);
   const streak = W.streak();
   const today = h('div', { class: 'today' },
     h('div', { class: 'today-top' },
       h('div', null, h('div', { class: 'today-title' }, 'Сегодня'),
         h('div', { class: 'muted' }, q.due.length || q.fresh.length
-          ? `${q.due.length} повторить · ${q.fresh.length} новых`
+          ? [q.fresh.length ? `новых слов: ${q.fresh.length}` : '', q.due.length ? `повторить: ${q.due.length}` : ''].filter(Boolean).join(' · ')
           : 'На сегодня всё повторено 🎉')),
       streak ? h('div', { class: 'streak', title: 'Дней подряд' }, 'серия', h('b', null, String(streak)), plural(streak, 'день', 'дня', 'дней').replace(/^\d+ /, '')) : null),
     h('div', { class: 'bar' }, h('i', { style: `width:${c.total ? Math.round(c.known / c.total * 100) : 0}%` })),
-    h('div', { class: 'muted small' }, `Выучено ${c.known} из ${c.total} · учу ${c.learning}`),
+    c.known || c.learning ? h('div', { class: 'muted small' }, `Выучено ${c.known} из ${c.total}` + (c.learning ? ` · в процессе ${c.learning}` : '')) : null,
     W.goalLine ? W.goalLine() : null,
     h('button', { class: 'btn primary wide', onclick: () => {
       if (q.due.length + q.fresh.length) W.study('learn', [...q.due, ...q.fresh], 'Сегодня', { queued: true });
       else W.study('learn', W.shuffle(all.filter(x => W.S.prog[x.id])).slice(0, 15), 'Повторение', { queued: true, extra: true });
-    } }, q.due.length + q.fresh.length ? 'Начать заучивание' : 'Повторить ещё немного'));
+    } }, q.due.length + q.fresh.length ? 'Начать занятие' : 'Повторить ещё немного'));
+  return today;
+}
 
+// на iPhone вкладка Safari и иконка «Домой» хранят данные раздельно — предупреждаем заранее
+const iosWarn = () => W.isIOS() && !W.standalone() ? h('div', { class: 'warn' },
+  h('b', null, 'Сначала установите приложение. '),
+  'На iPhone слова и прогресс во вкладке Safari и в приложении с иконки хранятся отдельно. Нажмите «Поделиться» → «На экран „Домой“» и занимайтесь оттуда. Уже занимались здесь? Сохраните копию («Профиль» → «Сохранность») и восстановите её в установленном приложении.') : null;
+
+// ---------- «Слова»: колоды ----------
+function renderDecks() {
+  const root = $('#tab-decks'), lang = W.S.lang;
   const smart = h('div', { class: 'chips' }, W.smart(lang).map(d =>
     h('button', { class: 'chip', onclick: () => openDeck(d) }, d.emoji + ' ' + d.title + ' · ' + d.cards.length)),
-    // тренажёры живут во вкладке «Грамматика» — даём к ним короткую дорогу
-    W.drillsBlock ? h('button', { class: 'chip', onclick: () => { W.showTab('gram'); setTimeout(() => { const el = document.getElementById('drills-' + lang); if (el) el.scrollIntoView({ block: 'start' }); }, 50); } }, '🎯 Тренажёры') : null);
+  );
 
   const folders = W.builtinFolders(lang).map(f => ({ id: f.id, lang, title: f.title, decks: f.decks, builtin: true }))
     .concat(W.S.folders.filter(f => f.lang === lang).map(f => ({ id: f.id, title: f.title, decks: W.userDecks(lang).filter(d => d.folder === f.id), user: true, lang })));
   const known = new Set(W.S.folders.map(f => f.id));
   folders.push({ id: 'my', lang, title: 'Мои колоды', decks: W.userDecks(lang).filter(d => !known.has(d.folder)), mine: true });
 
-  // на iPhone вкладка Safari и иконка «Домой» хранят данные раздельно — предупреждаем заранее
-  const iosTab = W.isIOS() && !W.standalone() ? h('div', { class: 'warn' },
-    h('b', null, 'Сначала установите приложение. '),
-    'На iPhone слова и прогресс во вкладке Safari и в приложении с иконки хранятся отдельно. Нажмите «Поделиться» → «На экран „Домой“» и занимайтесь оттуда. Уже занимались здесь? Сохраните копию («Ещё» → «Сохранность») и восстановите её в установленном приложении.') : null;
   W.put(root,
     h('header', { class: 'head' },
-      h('div', { class: 'kicker head-line' }, h('span', null, W.issueLine()), h('button', { class: 'link', onclick: () => W.showTab('search') }, 'поиск')),
-      h('h1', null, h('span', { html: 'Живые<br>слова' }), W.emblem()),
+      h('div', { class: 'kicker head-line' }, h('span', null, 'колоды'), h('button', { class: 'link', onclick: () => W.showTab('search') }, 'поиск')),
+      h('h1', null, 'Слова'),
       W.langSwitch()),
-    iosTab, W.levelCard ? W.levelCard() : null, today, smart,
+    h('p', { class: 'muted' }, 'Слова по темам и уровням. Любую колоду можно учить отдельно, а занятие на день — на ', h('button', { class: 'inline-link', onclick: () => W.showTab('home') }, 'Главной'), '.'),
+    smart,
     ...folders.map(f => folderBlock(f)),
     h('div', { class: 'row-btns' },
       h('button', { class: 'btn', onclick: () => createDeck() }, '+ Колода'),
