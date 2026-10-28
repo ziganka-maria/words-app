@@ -122,13 +122,15 @@ W.lookup = (raw, lang, text, sentence, idx) => {
     if (best) return { w: best.c.w, t: best.c.t, card: best.c, phrase: true };
   }
   if (short) return { w, t: cm[w], from: 'common' }; // фраза не нашлась — служебное значение, а не карточка (may ≠ «май»)
-  if (D.words.has(w)) return { w: D.words.get(w).w, t: D.words.get(w).t, card: D.words.get(w) };
-  if (D.forms.has(w)) return { w: D.forms.get(w).w, t: D.forms.get(w).t, card: D.forms.get(w), form: w };
+  // профессиональные карточки (lv 'pro') уступают служебному значению: lots ≠ «лот», fill ≠ «исполнить ордер»
+  const ok = (m, k) => m.has(k) && !(cm[k] && m.get(k).lv === 'pro');
+  if (ok(D.words, w)) return { w: D.words.get(w).w, t: D.words.get(w).t, card: D.words.get(w) };
+  if (ok(D.forms, w)) return { w: D.forms.get(w).w, t: D.forms.get(w).t, card: D.forms.get(w), form: w };
   if (cm[w]) return { w, t: cm[w], from: 'common' };
   for (const s of stems(w)) {
     if (gl[s]) return { w: s, t: gl[s], from: 'gl' };
-    if (D.words.has(s)) return { w: D.words.get(s).w, t: D.words.get(s).t, card: D.words.get(s), form: w };
-    if (D.forms.has(s)) return { w: D.forms.get(s).w, t: D.forms.get(s).t, card: D.forms.get(s), form: w };
+    if (ok(D.words, s)) return { w: D.words.get(s).w, t: D.words.get(s).t, card: D.words.get(s), form: w };
+    if (ok(D.forms, s)) return { w: D.forms.get(s).w, t: D.forms.get(s).t, card: D.forms.get(s), form: w };
     if (cm[s]) return { w: s, t: cm[s], from: 'common' };
   }
   // слово через дефис: пробуем части

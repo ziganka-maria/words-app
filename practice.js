@@ -5,13 +5,14 @@ const W = window.W, h = W.h;
 W.PRACTICE_N = 12; W.LEVEL_REVIEW_N = 20;
 const lessons = lang => (window.GRAMMAR || {})[lang] || [];
 const extra = l => (window.GDRILL || {})[l.id] || [];
+const xtra = l => (window.GTASK || {})[l.id] || [];
 
-// вопрос урока по номеру: числа — проверка урока (quiz), 'dN' — дополнительные вопросы для отработки (GDRILL)
-W.gramQ = (l, qi) => typeof qi === 'string' && qi[0] === 'd' ? extra(l)[+qi.slice(1)] : l.quiz[qi];
+// вопрос урока по номеру: числа — проверка урока (quiz), 'dN' — доп. вопросы для отработки (GDRILL), 'xN' — задания тренажёров по темам (GTASK)
+W.gramQ = (l, qi) => typeof qi !== 'string' ? l.quiz[qi] : qi[0] === 'd' ? extra(l)[+qi.slice(1)] : qi[0] === 'x' ? xtra(l)[+qi.slice(1)] : undefined;
 // пока урок не пройден, вопросы его проверки не трогаем — иначе «Проверить себя» уже не проверит честно
-const refs = l => (W.S.gram[l.id] && W.S.gram[l.id].done ? l.quiz.map((q, i) => i) : []).concat(extra(l).map((q, i) => 'd' + i));
+const refs = l => (W.S.gram[l.id] && W.S.gram[l.id].done ? l.quiz.map((q, i) => i) : []).concat(extra(l).map((q, i) => 'd' + i), xtra(l).map((q, i) => 'x' + i));
 // есть ли что отрабатывать: свои вопросы урока или пройденная проверка (для немецкого доп. вопросов пока нет)
-W.hasPractice = l => extra(l).length > 0 || !!(W.S.gram[l.id] && W.S.gram[l.id].done);
+W.hasPractice = l => extra(l).length > 0 || xtra(l).length > 0 || !!(W.S.gram[l.id] && W.S.gram[l.id].done);
 const qKey = (l, qi) => 'g:' + l.id + ':' + qi;
 
 // ---------- интервальные повторы ----------

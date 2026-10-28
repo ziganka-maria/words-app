@@ -348,8 +348,8 @@ function folderBlock(f) {
   if (f.mine && !f.decks.length) return h('div', { class: 'folder' },
     h('div', { class: 'folder-title' }, f.title),
     h('p', { class: 'muted empty' }, 'Здесь появятся ваши колоды. Создайте свою или добавляйте слова из готовых через «⋯» у карточки.'));
-  // папки с классическим курсом по умолчанию свёрнуты; что открыл пользователь, помним до перезапуска
-  const key = f.lang + ':' + f.id, want = openFolders.has(key) ? openFolders.get(key) : !/^(en|de)-[abc]\d/.test(f.id);
+  // папки с классическим курсом и профессиями по умолчанию свёрнуты; что открыл пользователь, помним до перезапуска
+  const key = f.lang + ':' + f.id, want = openFolders.has(key) ? openFolders.get(key) : !/^(en|de)-([abc]\d|pro-)/.test(f.id);
   const box = h('details', { class: 'folder', open: want, ontoggle: () => openFolders.set(key, box.open) },
     h('summary', { class: 'folder-title' }, f.title, h('span', { class: 'muted small' }, ' · ' + plural(f.decks.length, 'колода', 'колоды', 'колод')),
       f.user ? h('button', { class: 'link', onclick: e => { e.preventDefault(); folderMenu(f); } }, 'изменить') : null),

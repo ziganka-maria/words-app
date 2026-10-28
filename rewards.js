@@ -62,7 +62,7 @@ W.STAMPS = [
   ['Словарь', 'known-500', 'Пятьсот слов', 'Выучено 500 слов', 'book', '500', 'blue', () => known() >= 500],
   ['Словарь', 'known-1000', 'Тысяча слов', 'Выучено 1000 слов', 'laurel', '1000', 'gold', () => known() >= 1000],
   ['Словарь', 'deck-done', 'Колода целиком', 'Выучена целая колода', 'plane', '★', 'red', deckDone],
-  ['Словарь', 'live-done', 'Свой человек', 'Выучен весь «Живой язык» одного языка', 'swallow', '★', 'gold', () => ['en', 'de'].some(l => { const c = W.allDecks(l).filter(d => d.cards[0] && d.cards[0].lv === 'live').flatMap(d => d.cards); return c.length && c.every(x => W.status(x.id) === 'known'); })],
+  ['Словарь', 'live-done', 'Свой человек', 'Выучен весь «Живой язык» одного языка', 'swallow', '★', 'gold', () => ['en', 'de'].some(l => { const c = W.allDecks(l).filter(d => d.builtin && !d.level).flatMap(d => d.cards); return c.length && c.every(x => W.status(x.id) === 'known'); })],
   ['Грамматика и чтение', 'lessons-a1', 'Глава A1', 'Пройдены все уроки A1 (английский)', 'quill', 'A1', 'blue', () => lessonsDone('A1')],
   ['Грамматика и чтение', 'lessons-a2', 'Глава A2', 'Пройдены все уроки A2 (английский)', 'quill', 'A2', 'blue', () => lessonsDone('A2')],
   ['Грамматика и чтение', 'texts-5', 'Читатель', 'Прочитано 5 текстов', 'letter', '5', 'green', () => Object.keys(W.S.read || {}).filter(W.textRead).length >= 5],

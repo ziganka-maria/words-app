@@ -71,6 +71,8 @@ function openLesson(l, num) {
   });
 }
 
+// подсказка к виду задания (q.k) — задания тренажёров по темам
+W.TASK_KIND = { form: 'Впишите нужную форму', fix: 'Исправьте ошибку и напишите предложение целиком', re: 'Перестройте предложение', err: 'Где ошибка?' };
 // один вопрос урока — t = { body, q, label, key, grade(ok), next }; варианты (q.o) или ввод ответа (q.t)
 W.taskQuestion = t => {
   const q = t.q, why = h('div', { class: 'result' });
@@ -102,7 +104,7 @@ W.taskQuestion = t => {
     } }, input, h('button', { type: 'submit', class: 'btn primary wide' }, 'Проверить'));
     setTimeout(() => input.focus(), 60);
   }
-  W.put(t.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, t.label || ''), h('div', { class: 'q' }, q.q)), ctl, why);
+  W.put(t.body, h('div', { class: 'prompt' }, h('div', { class: 'muted small' }, [W.TASK_KIND[q.k], t.label].filter(Boolean).join(' · ')), h('div', { class: 'q' }, q.q)), ctl, why);
 };
 
 function quiz(el, l, num) {

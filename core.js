@@ -160,14 +160,21 @@ const toCard = (a, lang, deckId, used, reg) => {
 
 W.prepare = () => {
   const C = window.CONTENT || {};
-  for (const lang in C) for (const f of C[lang].folders) {
-    f.lang = lang; f.builtin = true;
-    for (const d of f.decks) {
-      const used = new Set();
-      d.lang = lang; d.folder = f.id; d.builtin = true;
-      d.cards = d.cards.map(a => toCard(a, lang, d.id, used, d.reg));
-      d.cards.forEach(c => { c.lv = d.level || 'live'; });
+  for (const lang in C) {
+    for (const f of C[lang].folders) {
+      f.lang = lang; f.builtin = true;
+      for (const d of f.decks) {
+        const used = new Set();
+        d.lang = lang; d.folder = f.id; d.builtin = true;
+        // строка '=слово' — ссылка на карточку из другой колоды (общий прогресс), разбирается ниже
+        // при повторном вызове чужие (уже подготовленные в своей колоде) карточки не трогаем — иначе сменится id и пропадёт прогресс
+        d.cards = d.cards.map(a => typeof a === 'string' || (a.id && !a.id.startsWith(d.id + ':')) ? a : toCard(a, lang, d.id, used, d.reg));
+        d.cards.forEach(c => { if (typeof c !== 'string' && c.id.startsWith(d.id + ':')) c.lv = d.level || 'live'; });
+      }
     }
+    const byWord = new Map();
+    for (const f of C[lang].folders) for (const d of f.decks) for (const c of d.cards) if (typeof c !== 'string' && !byWord.has(c.w.toLowerCase())) byWord.set(c.w.toLowerCase(), c);
+    for (const f of C[lang].folders) for (const d of f.decks) d.cards = d.cards.map(c => typeof c === 'string' ? byWord.get(c.slice(1).toLowerCase()) : c).filter(Boolean);
   }
 };
 
