@@ -40,14 +40,15 @@ W.drillsBlock = lang => {
     h('span', { class: 'l-num' + (done[id] ? ' done' : '') }, done[id] ? '✓' : '§'),
     h('span', { class: 'deck-main' }, h('span', { class: 'deck-title' }, title),
       h('span', { class: 'muted small' }, sub + (done[id] ? ' · лучший результат ' + done[id].best + '%' : '')))) : null;
+  // сверху — ошибки, потом грамматика по темам, потом глаголы, артикли, слух и произношение
   return h('section', { id: 'drills-' + lang },
-    h('div', { class: 'lvl-head' }, 'Тренажёры'),
+    row('mist-' + lang, 'Мои ошибки', mist ? mist + ' к повторению' : 'пока пусто — и это прекрасно', () => openMistakes(lang), true),
+    W.gtBlock ? W.gtBlock(lang, row) : null,
+    h('div', { class: 'lvl-head' }, 'Глаголы, слух и произношение'),
     row('irr-' + lang, 'Неправильные глаголы', irr.length + ' глаголов · листайте формы и проверяйте себя', () => openIrregular(lang), irr.length >= 5),
     row('art-' + lang, 'Артикли a, an, the', 'выберите артикль или «без артикля»', () => openArticles(lang), (D.articles || []).length > 0),
     row('dictation-' + lang, 'Диктант на слух', 'послушайте фразу и запишите', () => openDictation(lang), W.S.set.sound && dictationPool(lang).length >= 5),
-    row('speak-' + lang, 'Произношение', 'скажите слово в микрофон или запишите себя', () => openSpeak(lang), true),
-    row('mist-' + lang, 'Мои ошибки', mist ? mist + ' к повторению' : 'пока пусто — и это прекрасно', () => openMistakes(lang), true),
-    W.gtBlock ? W.gtBlock(lang, row) : null);
+    row('speak-' + lang, 'Произношение', 'скажите слово в микрофон или запишите себя', () => openSpeak(lang), true));
 };
 
 // ---------- общая оболочка ----------

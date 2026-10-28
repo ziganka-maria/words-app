@@ -37,9 +37,17 @@ W.renderGrammar = root => {
     h('p', { class: 'muted' }, 'Правило, примеры и проверка. Урок пройден при 70%. Потом — «Отработать», а через несколько дней приложение напомнит повторить.'),
     own && own !== 'A0' && list.length ? h('p', { class: 'muted small' }, 'Ваш уровень по тесту: ' + W.levelInfo[own] + '. Уроки ниже этого уровня можно пролистать и пройти быстро.') : null,
     due.length && W.dueCard ? h('div', { class: 'lessons' }, W.dueCard(lang, due)) : null,
-    W.drillsBlock ? W.drillsBlock(lang) : null,
     h('div', { class: 'lessons' }, kids),
     list.length ? (lang === 'en' ? null : h('p', { class: 'muted small' }, 'Новые уроки появятся в обновлениях.')) : h('p', { class: 'muted empty' }, 'Для этого языка уроки пока готовятся.'));
+};
+
+// ---------- тренажёры (третья вкладка «Практики») ----------
+W.renderDrills = root => {
+  const lang = W.S.lang;
+  W.put(root,
+    h('header', { class: 'head' }, W.practiceSwitch('drill'), h('h1', null, 'Тренажёры'), W.langSwitch()),
+    h('p', { class: 'muted' }, 'Отработка грамматики по темам: после каждого ответа — короткое объяснение, ошибки собираются в «Моих ошибках». Сами правила — во вкладке «Грамматика».'),
+    W.drillsBlock ? W.drillsBlock(lang) : null);
 };
 
 function block(b) {

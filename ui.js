@@ -205,12 +205,12 @@ W.topbar = (title, right, kind) => h('div', { class: 'topbar' },
 
 // ---------- вкладки ----------
 let tab = 'home';
-const TABS = { home: () => renderHome(), decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), trans: () => W.renderTranslate($('#tab-trans')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
+const TABS = { home: () => renderHome(), decks: () => renderDecks(), read: () => W.renderReading ? W.renderReading($('#tab-read')) : null, gram: () => W.renderGrammar($('#tab-gram')), trans: () => W.renderTranslate($('#tab-trans')), drill: () => W.renderDrills($('#tab-drill')), search: () => renderSearch(), more: () => W.renderMore($('#tab-more')) };
 W.renderTab = () => { TABS[tab](); if (W.checkStamps) setTimeout(W.checkStamps, 300); };
 W.showTab = t => {
   tab = t;
-  // поиск — часть «Слов», перевод — вторая половина «Практики»
-  const navTab = { search: 'decks', trans: 'gram' }[t] || t;
+  // поиск — часть «Слов», перевод и тренажёры — части «Практики»
+  const navTab = { search: 'decks', trans: 'gram', drill: 'gram' }[t] || t;
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.tab === navTab));
   document.querySelectorAll('main > section').forEach(s => { s.hidden = s.id !== 'tab-' + t; });
   W.renderTab();
@@ -244,15 +244,11 @@ W.plural = plural;
 W.words = n => plural(n, 'слово', 'слова', 'слов');
 const deckCards = d => d.cards.filter(W.vis);
 
-// «Практика» — две вкладки (грамматика и перевод) с переключателем сверху
+// «Практика» — три вкладки (грамматика, тренажёры, перевод) с переключателем сверху
 W.practiceSwitch = cur => h('div', { class: 'seg practice-seg', role: 'tablist' },
-  [['gram', 'Грамматика'], ['trans', 'Перевод']].map(([t, l]) =>
+  [['gram', 'Грамматика'], ['drill', 'Тренажёры'], ['trans', 'Перевод']].map(([t, l]) =>
     h('button', { class: cur === t ? 'on' : '', role: 'tab', 'aria-selected': String(cur === t), onclick: () => cur !== t && W.showTab(t) }, l)));
-// тренажёры живут во вкладке «Грамматика» — открываем её на нужном месте
-W.openDrills = () => {
-  W.showTab('gram');
-  setTimeout(() => { const el = document.getElementById('drills-' + W.S.lang); if (el) el.scrollIntoView({ block: 'start' }); }, 50);
-};
+W.openDrills = () => W.showTab('drill');
 
 // ---------- «Главная»: первая полоса ----------
 function renderHome() {
@@ -287,7 +283,7 @@ function renderHome() {
       texts.length ? rubric('read', 'Чтение', W.plural(texts.length, 'текст', 'текста', 'текстов') + ', перевод любого слова по нажатию' + (read ? ' · прочитано ' + read : '') + (W.textNew && texts.some(W.textNew) ? ' · новых ' + texts.filter(W.textNew).length : ''), () => W.showTab('read')) : null,
       rubric('gram', 'Грамматика', lessons.length ? W.plural(lessons.length, 'урок', 'урока', 'уроков') + ': правило, примеры, проверка' + (passed ? ' · пройдено ' + passed : '') : 'уроки готовятся', () => W.showTab('gram')),
       rubric('trans', 'Перевод', lang === 'en' ? 'с русского: предложения, сборка из слов, тексты на темы' : 'задания для этого языка готовятся', () => W.showTab('trans')),
-      W.drillsBlock ? rubric('drills', 'Тренажёры', lang === 'en' ? 'неправильные глаголы, произношение, мои ошибки' : 'произношение', W.openDrills) : null),
+      W.drillsBlock ? rubric('drills', 'Тренажёры', lang === 'en' ? 'отработка всех тем грамматики, неправильные глаголы, произношение, мои ошибки' : 'произношение', W.openDrills) : null),
     h('button', { class: 'btn ghost wide', onclick: () => W.openWelcome() }, 'Как устроено приложение'));
 }
 
