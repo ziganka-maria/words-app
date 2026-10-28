@@ -137,6 +137,7 @@ W.lookup = (raw, lang, text, sentence, idx) => {
   if (w.includes('-')) { const parts = w.split('-').map(p => W.lookup(p, lang, text)).filter(Boolean); if (parts.length) return { w, t: parts.map(p => p.t.split(/[;,]/)[0]).join(' + '), from: 'parts' }; }
   return null;
 };
+W.commonWord = (w, lang) => !!(COMMON[lang || 'en'] || {})[w.toLowerCase()];
 W.resetDict = () => { for (const k in dict) delete dict[k]; };
 
 // ---------- колода «Слова из текстов» ----------
@@ -145,13 +146,13 @@ const textDeck = lang => {
   if (!d) { d = W.newDeck(lang, 'Слова из текстов', 'my'); d.emoji = '📖'; d.fromTexts = true; W.save(); }
   return d;
 };
-const addWord = (hit, sentence, tr, lang) => {
-  const d = textDeck(lang);
+const addWord = (hit, sentence, tr, lang, deck) => {
+  const d = deck ? deck() : textDeck(lang);
   const id = hit.card ? hit.card.id : null;
-  if (d.cards.some(c => (id && c.id === id) || c.w.toLowerCase() === hit.w.toLowerCase())) return W.toast('Уже есть в «Слова из текстов»');
+  if (d.cards.some(c => (id && c.id === id) || c.w.toLowerCase() === hit.w.toLowerCase())) return W.toast('Уже есть в «' + d.title + '»');
   d.cards.push(hit.card ? Object.assign({}, hit.card) : W.newCard(lang, { w: hit.w, t: hit.t, ex: sentence, et: tr || '' }));
   W.touch(d); W.save(); W.resetDict();
-  W.toast('Добавлено в «Слова из текстов»');
+  W.toast('Добавлено в «' + d.title + '»');
 };
 
 // ---------- список текстов ----------
@@ -174,6 +175,7 @@ W.renderReading = root => {
     h('header', { class: 'head' }, h('div', { class: 'kicker' }, 'тексты по уровням'), h('h1', null, 'Чтение'), W.langSwitch()),
     nNew ? h('p', { class: 'small' }, h('b', null, 'Новые тексты: ' + nNew), ' — отмечены «новое».') : null,
     h('p', { class: 'muted' }, 'Нажмите на любое слово — появится перевод. Неизвестные слова можно сразу добавить в свою колоду. Текст засчитывается, когда на вопросы отвечено хотя бы на 70%.'),
+    W.bookBlock && lang === 'en' ? W.bookBlock(lang) : null,
     list.length ? h('div', { class: 'lessons' }, kids) : h('p', { class: 'muted empty' }, 'Тексты для этого языка готовятся.'));
 };
 
@@ -182,12 +184,14 @@ const WORD = /^[A-Za-zÀ-ÿ']+(?:-[A-Za-zÀ-ÿ']+)*$/;
 const tokenize = s => s.split(/(\s+)/).flatMap(part => /\s/.test(part) ? [part] : part.split(/(^[^A-Za-zÀ-ÿ']+|[^A-Za-zÀ-ÿ']+$)/).filter(Boolean));
 let playing = null;
 
+// t.book — глава своей книги: без перевода предложений, своей озвучки и вопросов; t.deck() — куда добавлять слова
+W.openText = t => openText(t);
 function openText(t) {
   const lang = W.S.lang;
   if (W.textNew(t)) { W.markSeen('t:' + t.id); W.save(); }
   W.resetDict(); // словарь мог измениться: свои колоды, вход в аккаунт, «скрыть грубые»
   // докачиваем звук предложений, чтобы текст звучал и без интернета
-  if (W.prefetchUrls && lang === 'en') setTimeout(() => W.prefetchUrls(t.p.flat().map(s => W.audioUrl(s[0], lang))), 800);
+  if (W.prefetchUrls && lang === 'en' && !t.book) setTimeout(() => W.prefetchUrls(t.p.flat().map(s => W.audioUrl(s[0], lang))), 800);
   W.push(el => {
     let showTr = false;
     const sentences = t.p.flat();
@@ -212,9 +216,9 @@ function openText(t) {
           h('div', { class: 'gloss-w' }, h('b', null, hit.w), W.soundBtn(hit.w, lang), hit.form && hit.form !== hit.w.toLowerCase() ? h('span', { class: 'muted small' }, ' (форма: ' + hit.form + ')') : null),
           h('div', { class: 'gloss-t' }, hit.t),
           hit.card && hit.card.n ? h('div', { class: 'note' }, hit.card.n) : null)
-          : h('p', { class: 'muted' }, 'Этого слова нет в словаре приложения. Перевод — в предложении ниже.'),
-        h('div', { class: 'gloss-s' }, h('div', { class: 'kicker' }, 'предложение'), h('p', null, en, W.soundBtn(en, lang)), h('p', { class: 'muted' }, ru))),
-        hit ? [{ label: 'В мою колоду', cls: 'primary', fn: () => addWord(hit, en, ru, lang) }] : []);
+          : h('p', { class: 'muted' }, ru ? 'Этого слова нет в словаре приложения. Перевод — в предложении ниже.' : 'Этого слова нет в словаре приложения.'),
+        h('div', { class: 'gloss-s' }, h('div', { class: 'kicker' }, 'предложение'), h('p', null, en, W.soundBtn(en, lang)), ru ? h('p', { class: 'muted' }, ru) : null)),
+        hit ? [{ label: 'В мою колоду', cls: 'primary', fn: () => addWord(hit, en, ru, lang, t.deck) }] : []);
     };
     const stop = () => { if (playing) { playing.stop = true; playing = null; } W.stopSpeak(); W.put(playBtn, 'Слушать текст'); body.querySelectorAll('.sent.now').forEach(x => x.classList.remove('now')); };
     const play = async () => {
@@ -233,10 +237,11 @@ function openText(t) {
     const trBtn = h('button', { class: 'btn', onclick: () => { showTr = !showTr; W.put(trBtn, showTr ? 'Скрыть перевод' : 'Перевод'); renderBody(); } }, 'Перевод');
     renderBody();
     W.put(el, W.topbar(t.title),
-      h('div', { class: 'kicker' }, W.levelInfo[t.level] + ' · ' + t.src),
+      h('div', { class: 'kicker' }, [W.levelInfo[t.level], t.src].filter(Boolean).join(' · ')),
       h('h2', null, t.title),
-      h('div', { class: 'row-btns' }, playBtn, trBtn),
+      h('div', { class: 'row-btns' }, playBtn, t.book ? null : trBtn),
       body,
+      t.after ? t.after(stop) : null,
       t.q && t.q.length ? h('button', { class: 'btn primary wide', onclick: () => { stop(); quiz(el, t); } }, 'Вопросы к тексту · ' + t.q.length) : null);
     // чтение вслух останавливаем, только когда ушли с экрана текста (окно слова поверх — не повод)
     const onPop = () => { if (!el.isConnected) { stop(); window.removeEventListener('popstate', onPop); } };
