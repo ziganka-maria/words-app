@@ -14,7 +14,7 @@ const BASE = 'words-state-v1';
 let KEY = BASE;
 W.storeKey = () => KEY;
 const defaults = () => ({
-  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, tmist: {}, topics: {}, act: {}, seen: {}, tomb: {}, mod: 0,
+  v: 1, lang: 'en', folders: [], decks: [], prog: {}, fav: {}, days: {}, gram: {}, level: {}, stamps: {}, read: {}, drill: {}, gmist: {}, gmt: {}, tmist: {}, topics: {}, act: {}, seen: {}, tomb: {}, mod: 0,
   newToday: { d: 0 },
   set: { sound: true, hideRude: false, newPerDay: 10, dir: 'fw', theme: 'auto', voice: 'us', goal: 20 }
 });
@@ -26,7 +26,7 @@ W.validState = s => isObj(s) && s.v === 1 &&
   Array.isArray(s.decks) && s.decks.every(d => isObj(d) && typeof d.id === 'string' && Array.isArray(d.cards) &&
     d.cards.every(c => isObj(c) && typeof c.id === 'string' && typeof c.w === 'string' && typeof c.t === 'string')) &&
   (s.folders === undefined || (Array.isArray(s.folders) && s.folders.every(isObj))) &&
-  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'tmist', 'topics', 'act', 'seen'].every(k => s[k] === undefined || isObj(s[k]));
+  ['prog', 'fav', 'days', 'gram', 'set', 'newToday', 'tomb', 'level', 'stamps', 'read', 'drill', 'gmist', 'gmt', 'tmist', 'topics', 'act', 'seen'].every(k => s[k] === undefined || isObj(s[k]));
 
 W.normalize = s => {
   const d = defaults();
@@ -107,9 +107,15 @@ W.merge = (a, b) => {
   for (const k in b.stamps) r.stamps[k] = r.stamps[k] ? Math.min(r.stamps[k], b.stamps[k]) : b.stamps[k];
   // тексты и тренажёры: лучший результат и большее число прохождений
   const best = (x, y) => !x ? y : !y ? x : Object.assign({}, x, y, { n: Math.max(x.n || 0, y.n || 0), best: Math.max(x.best || 0, y.best || 0), ts: Math.max(x.ts || 0, y.ts || 0), days: Object.assign({}, x.days, y.days) });
-  // ошибки в уроках и дни занятий — объединяем
-  r.gmist = Object.assign({}, a.gmist);
-  for (const k in b.gmist) r.gmist[k] = [...new Set([...(r.gmist[k] || []), ...b.gmist[k]])];
+  // ошибки в уроках — объединяем, но если позднее всего ответили верно (gmt[урок:номер] < 0), пункт убираем
+  r.gmt = Object.assign({}, a.gmt);
+  for (const k in b.gmt || {}) if (!(k in r.gmt) || Math.abs(b.gmt[k]) > Math.abs(r.gmt[k])) r.gmt[k] = b.gmt[k];
+  r.gmist = {};
+  for (const k of new Set([...Object.keys(a.gmist || {}), ...Object.keys(b.gmist || {})])) {
+    const list = [...new Set([...((a.gmist || {})[k] || []), ...((b.gmist || {})[k] || [])])].filter(qi => !(r.gmt[k + ':' + qi] < 0));
+    if (list.length) r.gmist[k] = list;
+  }
+  // дни занятий — объединяем
   r.act = Object.assign({}, a.act, b.act);
   // когда последний раз встречалось предложение или вопрос — более позднее
   r.seen = Object.assign({}, a.seen);

@@ -6,11 +6,15 @@ W.PRACTICE_N = 12; W.LEVEL_REVIEW_N = 20;
 const lessons = lang => (window.GRAMMAR || {})[lang] || [];
 const extra = l => (window.GDRILL || {})[l.id] || [];
 const xtra = l => (window.GTASK || {})[l.id] || [];
+// задания тренажёров для «Отработать» и повторов: только уровня самого урока и не повторяющие вопросы проверки и GDRILL
+const LVS = ['A1', 'A2', 'B1', 'B2', 'C1'];
+W.gtUsable = (l, q) => (!q.lv || LVS.indexOf(q.lv) <= LVS.indexOf(l.level)) && !W.gtDupQuiz(l, q) && !extra(l).some(d => d.q === q.q);
+W.gtDupQuiz = (l, q) => (l.quiz || []).some(z => z.q === q.q);
 
 // вопрос урока по номеру: числа — проверка урока (quiz), 'dN' — доп. вопросы для отработки (GDRILL), 'xN' — задания тренажёров по темам (GTASK)
 W.gramQ = (l, qi) => typeof qi !== 'string' ? l.quiz[qi] : qi[0] === 'd' ? extra(l)[+qi.slice(1)] : qi[0] === 'x' ? xtra(l)[+qi.slice(1)] : undefined;
 // пока урок не пройден, вопросы его проверки не трогаем — иначе «Проверить себя» уже не проверит честно
-const refs = l => (W.S.gram[l.id] && W.S.gram[l.id].done ? l.quiz.map((q, i) => i) : []).concat(extra(l).map((q, i) => 'd' + i), xtra(l).map((q, i) => 'x' + i));
+const refs = l => (W.S.gram[l.id] && W.S.gram[l.id].done ? l.quiz.map((q, i) => i) : []).concat(extra(l).map((q, i) => 'd' + i), xtra(l).map((q, i) => W.gtUsable(l, q) ? 'x' + i : null).filter(Boolean));
 // есть ли что отрабатывать: свои вопросы урока или пройденная проверка (для немецкого доп. вопросов пока нет)
 W.hasPractice = l => extra(l).length > 0 || xtra(l).length > 0 || !!(W.S.gram[l.id] && W.S.gram[l.id].done);
 const qKey = (l, qi) => 'g:' + l.id + ':' + qi;

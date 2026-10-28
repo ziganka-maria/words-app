@@ -72,7 +72,7 @@ function openLesson(l, num) {
 }
 
 // подсказка к виду задания (q.k) — задания тренажёров по темам
-W.TASK_KIND = { form: 'Впишите нужную форму', fix: 'Исправьте ошибку и напишите предложение целиком', re: 'Перестройте предложение', err: 'Где ошибка?' };
+W.TASK_KIND = { form: 'Впишите нужную форму', fix: 'Исправьте ошибку и напишите предложение целиком', re: 'Перестройте предложение' };
 // один вопрос урока — t = { body, q, label, key, grade(ok), next }; варианты (q.o) или ввод ответа (q.t)
 W.taskQuestion = t => {
   const q = t.q, why = h('div', { class: 'result' });
@@ -95,11 +95,21 @@ W.taskQuestion = t => {
     } }, q.o[k])));
   } else {
     const input = h('input', { type: 'text', class: 'write-in', autocapitalize: 'off', autocomplete: 'off', spellcheck: 'false' });
+    // задания тренажёров (q.k): начальные the / to — часть ответа, поэтому сравниваем строго; опечатку можно исправить один раз
+    const flat = s => W.canon(s).replace(/ /g, '');
+    const grade1 = (v, x) => !q.k ? W.check(v, { w: x }) : flat(v) === flat(x) ? 'ok' : W.check(v, { w: x }) === 'close' ? 'close' : 'bad';
+    let retried = false;
     ctl = h('form', { class: 'write', onsubmit: e => {
       e.preventDefault();
       if (input.disabled || !input.value.trim()) return;
+      const res = q.t.map(x => grade1(input.value, x)), ok = res.includes('ok');
+      if (!ok && !retried && res.includes('close')) {
+        retried = true;
+        why.className = 'result';
+        W.put(why, h('b', null, 'Почти'), h('div', null, 'Проверьте написание и нажмите «Проверить» ещё раз.'));
+        return input.focus();
+      }
       input.disabled = true;
-      const ok = q.t.some(x => W.check(input.value, { w: x }) === 'ok');
       after(ok, ok ? null : h('div', null, 'Правильно: ', h('b', null, q.t[0])));
     } }, input, h('button', { type: 'submit', class: 'btn primary wide' }, 'Проверить'));
     setTimeout(() => input.focus(), 60);

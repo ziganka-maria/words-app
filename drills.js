@@ -391,9 +391,12 @@ function openSpeak(lang) {
 // ошибки в вопросах грамматики хранятся как S.gmist[урок] = [номера вопросов] (числа — проверка урока, 'dN' — отработка)
 W.noteGrammarMistake = (lessonId, qi, ok) => {
   const S = W.S; S.gmist = S.gmist || {};
-  const list = new Set(S.gmist[lessonId] || []);
+  const list = new Set(S.gmist[lessonId] || []), was = list.has(qi);
   if (ok) list.delete(qi); else list.add(qi);
   if (list.size) S.gmist[lessonId] = [...list]; else delete S.gmist[lessonId];
+  // время ошибки (> 0) или исправления (< 0): при слиянии копий побеждает более позднее (W.merge)
+  const k = lessonId + ':' + qi, had = (S.gmt = S.gmt || {})[k];
+  if (!ok) S.gmt[k] = Date.now(); else if (was || had > 0) S.gmt[k] = -Date.now();
 };
 const grammarMistakes = lang => {
   const out = [];
