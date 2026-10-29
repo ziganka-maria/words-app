@@ -186,10 +186,12 @@ const bookDeck = (b, make) => {
 };
 function buildDeck(b, stat, n) {
   const d = bookDeck(b, true), have = new Set(d.cards.map(c => c.id));
+  // слова уровней ниже вашего (по тесту уровня) считаем знакомыми — в колоду сразу идут нужные
+  const ul = W.LEVELS.indexOf(W.userLevel('en')), below = c => { const i = W.LEVELS.indexOf(c.lv); return i >= 0 && i < ul; };
   let added = 0;
   for (const x of stat.list) {
     if (added >= n) break;
-    if (have.has(x.c.id) || W.status(x.c.id) === 'known' || W.commonWord(x.c.w) || STOP.has(x.c.w.toLowerCase()) || x.c.w.length < 3 || x.c.lv === 'live' && x.n < 2) continue;
+    if (have.has(x.c.id) || W.status(x.c.id) === 'known' || below(x.c) || W.commonWord(x.c.w) || STOP.has(x.c.w.toLowerCase()) || x.c.w.length < 3 || x.c.lv === 'live' && x.n < 2) continue;
     const c = Object.assign({}, x.c);
     if (x.s) c.n = [c.n, 'В книге: «' + sentenceWith(x.s, c.w) + '»'].filter(Boolean).join('\n');
     d.cards.push(c); added++;
@@ -250,7 +252,7 @@ async function openBook(id) {
           h('p', null, 'Вы уже знаете ', h('b', null, stat.known + ' (' + pct + '%)'), '. Незнакомых: ', h('b', null, String(stat.list.length - stat.known)), '.'),
           h('div', { class: 'bar' }, h('i', { style: 'width:' + pct + '%' }))),
         h('div', { class: 'lvl-head' }, 'Колода по книге'),
-        h('p', { class: 'muted small' }, 'Самые частые незнакомые слова книги — сначала те, что встречаются чаще. В каждой карточке — предложение из книги.' + (d ? ' Сейчас в колоде: ' + d.cards.length + '.' : '')),
+        h('p', { class: 'muted small' }, 'Самые частые незнакомые слова книги — сначала те, что встречаются чаще; слова ниже вашего уровня по тесту пропускаем. В каждой карточке — предложение из книги.' + (d ? ' Сейчас в колоде: ' + d.cards.length + '.' : '')),
         h('div', { class: 'chips' }, mk(50), mk(100), mk(200)),
         stat.none.length ? h('details', null, h('summary', { class: 'muted small' }, 'Слова, которых нет в словаре приложения · ' + stat.none.length),
           h('p', { class: 'muted small' }, stat.none.slice(0, 60).map(x => x[0] + ' (' + x[1] + ')').join(', ') + '. Их можно добавить в колоду при чтении и вписать перевод самой.')) : null,

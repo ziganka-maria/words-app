@@ -1,4 +1,4 @@
-const CACHE = 'words-v21';
+const CACHE = 'words-v22';
 // звук хранится отдельно и не стирается при обновлении приложения
 const AUDIO = 'words-audio-v1';
 const FILES = ['./', './index.html', './style.css', './core.js', './ui.js', './study.js', './more.js', './sync.js', './config.js', './boot.js',
